@@ -158,6 +158,7 @@
   .bdm-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--ink-secondary);}
   .bdm-item:hover{background:#f2f4f8;}
   .bdm-item.active{background:#e8f1fc;color:var(--brand-dark);}
+  .bdm-list-sm{max-height:150px;}
   .dash-main-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
   .dash-main-head h2{font-size:16px;margin:0;}
   .dash-main-head h2 b{color:var(--brand-dark);}
@@ -398,44 +399,45 @@
       <h3>Filters</h3>
       <button class="filter-close" onclick="closeFilters()">&times;</button>
     </div>
-    <div class="filter-field">
-      <label>Sales Rep</label>
-      <select id="fRep"></select>
-      <span class="chk-hint">Filters Accounts / Orders / Products / Reports. The Dashboard page has its own BDM picker.</span>
+
+    <div class="filter-field bdm-panel">
+      <p class="bdm-panel-title">Sales Rep</p>
+      <input type="text" class="bdm-search" id="fRepSearch" placeholder="Search BDM" />
+      <div class="bdm-list bdm-list-sm" id="fRepList"></div>
+      <span class="chk-hint">Same selection as the BDM picker on the Dashboard page — changing it here changes it there too.</span>
     </div>
-    <div class="filter-field">
-      <label>Customer Type</label>
-      <select id="fType"></select>
+
+    <div class="filter-field bdm-panel">
+      <p class="bdm-panel-title">Customer Type</p>
+      <div class="bdm-list bdm-list-sm" id="fTypeList"></div>
     </div>
-    <div class="filter-field">
-      <label>Warehouse</label>
-      <select id="fWarehouse"></select>
+
+    <div class="filter-field bdm-panel">
+      <p class="bdm-panel-title">Warehouse</p>
+      <div class="bdm-list bdm-list-sm" id="fWarehouseList"></div>
     </div>
-    <div class="filter-field">
-      <label>Date Range</label>
-      <select id="fDateRange">
-        <option value="all">All Time</option>
-        <option value="this_week">This Week</option>
-        <option value="this_month">This Month</option>
-        <option value="last_month">Last Month</option>
-        <option value="custom">Custom Range…</option>
-      </select>
-    </div>
-    <div class="filter-field" id="fCustomWrap" style="display:none">
-      <label>Custom Range</label>
-      <div style="display:flex;gap:8px;">
-        <input type="date" id="fCustomStart" class="date-input" />
-        <input type="date" id="fCustomEnd" class="date-input" />
+
+    <div class="filter-field bdm-panel">
+      <p class="bdm-panel-title">Date Range</p>
+      <div class="bdm-list" id="fDateList"></div>
+      <div id="fCustomWrap" style="display:none;margin-top:8px;">
+        <div style="display:flex;gap:8px;">
+          <input type="date" id="fCustomStart" class="date-input" />
+          <input type="date" id="fCustomEnd" class="date-input" />
+        </div>
       </div>
     </div>
-    <div class="filter-field">
-      <label>Search</label>
-      <input type="text" id="fSearch" placeholder="Customer, order no. or product code…" />
+
+    <div class="filter-field bdm-panel">
+      <p class="bdm-panel-title">Search</p>
+      <input type="text" class="bdm-search" id="fSearch" placeholder="Customer, order no. or product code…" style="margin-bottom:0;" />
     </div>
-    <div class="filter-field">
+
+    <div class="filter-field bdm-panel">
       <label class="chk"><input type="checkbox" id="fProductOnly" /> Product Lines Only</label>
       <span class="chk-hint">(excludes delivery / install / credit lines from Products)</span>
     </div>
+
     <button class="btn btn-primary" onclick="closeFilters()" style="margin-top:8px;justify-content:center;">Apply</button>
   </div>
 </div>
@@ -538,14 +540,9 @@ function acctCode(customerCode, customer){
 // dataset, never reassigned by filters within a session.
 let ALL_REP_KEYS = [];
 let REP_COLOR = {};
-
-// Populate filter dropdowns from the full dataset
-function populateSelect(el, values, allLabel){
-  const prev = el.value;
-  el.innerHTML = '<option value="">' + allLabel + '</option>' +
-    values.map(v => `<option value="${esc(v.key)}">${esc(v.label)}</option>`).join('');
-  if(values.some(v => v.key === prev)) el.value = prev;
-}
+let ALL_TYPES = [];
+let ALL_WAREHOUSES = [];
+let didDefaultRep = false;
 
 function rebuildFromLines(){
   ALL_REP_KEYS = [...new Set(LINES.map(repKey))].sort((a,b) => {
@@ -556,24 +553,24 @@ function rebuildFromLines(){
   REP_COLOR = {};
   ALL_REP_KEYS.forEach((k,i) => { REP_COLOR[k] = PALETTE[i % PALETTE.length]; });
 
-  populateSelect(document.getElementById('fRep'), ALL_REP_KEYS.map(k => ({key:k, label: k===NO_REP ? 'No Rep Assigned' : k})), 'All Sales Reps');
-  const types = [...new Set(LINES.map(l => l.customer_type || 'Unspecified'))].sort();
-  populateSelect(document.getElementById('fType'), types.map(t => ({key:t, label:t})), 'All Customer Types');
-  const whs = [...new Set(LINES.map(l => l.warehouse || 'Unspecified'))].sort();
-  populateSelect(document.getElementById('fWarehouse'), whs.map(w => ({key:w, label:w})), 'All Warehouses');
+  ALL_TYPES = [...new Set(LINES.map(l => l.customer_type || 'Unspecified'))].sort();
+  ALL_WAREHOUSES = [...new Set(LINES.map(l => l.warehouse || 'Unspecified'))].sort();
 
-  // Default the Dashboard page's BDM selection (independent from the global
-  // "Sales Rep" filter used by the other pages) to the top rep by revenue, so
-  // there's always something meaningful to show on first load.
-  if((!state.dashboardRep || !ALL_REP_KEYS.includes(state.dashboardRep)) && ALL_REP_KEYS.length){
+  // The BDM picker on the Dashboard page and the "Sales Rep" filter used by
+  // every other page are the same underlying selection (state.rep). On first
+  // load only, default it to the top rep by revenue so there's something
+  // meaningful to show; after that, leave whatever the user has chosen alone
+  // (including an explicit "All Sales Reps").
+  if(!didDefaultRep && ALL_REP_KEYS.length){
     const byRev = new Map();
     LINES.forEach(l => byRev.set(repKey(l), (byRev.get(repKey(l))||0) + (l.sub_total||0)));
-    state.dashboardRep = [...ALL_REP_KEYS].sort((a,b) => (byRev.get(b)||0) - (byRev.get(a)||0))[0];
+    state.rep = [...ALL_REP_KEYS].sort((a,b) => (byRev.get(b)||0) - (byRev.get(a)||0))[0];
+    didDefaultRep = true;
   }
 }
 
 let state = { page:'dashboard', rep:'', type:'', warehouse:'', search:'', dateRange:'all', customStart:'', customEnd:'', productLinesOnly:false,
-  selectedAccount:null, bdmSearch:'', dashboardRep:'',
+  selectedAccount:null, bdmSearch:'', filterRepSearch:'',
   acctSort:{key:'revenue', dir:'desc'}, orderSort:{key:'date', dir:'desc'}, productSort:{key:'qty', dir:'desc'} };
 
 // Bounds for the chosen date range. Returns [start, end) — end is exclusive so a
@@ -602,12 +599,11 @@ function getRangeBounds(key){
   return [null, null];
 }
 
-// All lines matching the global filters (rep/type/warehouse/date/search), used
-// on the Accounts/Orders/Products/Reports pages. Pass repOverride to filter by
-// a specific rep regardless of the global "Sales Rep" filter — used by the
-// Dashboard page, whose BDM picker is independent of that global filter.
-function filteredLines(repOverride){
-  const rep = repOverride !== undefined ? repOverride : state.rep;
+// All lines matching the shared filters (rep/type/warehouse/date/search).
+// The Dashboard's BDM picker and every other page's "Sales Rep" filter both
+// read/write state.rep, so this one function serves them all.
+function filteredLines(){
+  const rep = state.rep;
   const q = state.search.trim().toLowerCase();
   const [rangeStart, rangeEnd] = state.dateRange !== 'all' ? getRangeBounds(state.dateRange) : [null, null];
   return LINES.filter(l => {
@@ -725,12 +721,15 @@ const PAGE_META = {
   reports: {title:'Reports', subtitle:'Revenue, accounts and products at a glance'},
 };
 
-// The Accounts/Orders/Products/Reports pages share the global filter panel
-// (Sales Rep / Customer Type / Warehouse) — the subtitle always says exactly
-// what's currently filtering the page, so a scoped view is never mistaken for "all".
-function activeFilterSummary(){
+// Every page shares the same filters (Sales Rep / Customer Type / Warehouse /
+// Date / Search) — the subtitle always says exactly what's currently filtering
+// the page, so a scoped view is never mistaken for "all". On the Dashboard
+// page the Rep part is skipped since the "Accounts owned by X" heading there
+// already says which rep is selected.
+function activeFilterSummary(opts){
+  const skipRep = !!(opts && opts.skipRep);
   const parts = [];
-  if(state.rep) parts.push('Rep: ' + (state.rep===NO_REP ? 'No Rep Assigned' : state.rep));
+  if(!skipRep && state.rep) parts.push('Rep: ' + (state.rep===NO_REP ? 'No Rep Assigned' : state.rep));
   if(state.type) parts.push('Type: ' + state.type);
   if(state.warehouse) parts.push('Warehouse: ' + state.warehouse);
   if(state.dateRange !== 'all') parts.push(DATE_RANGE_LABEL[state.dateRange] || '');
@@ -793,30 +792,41 @@ const ICON_PEOPLE = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none"
 /* ------------------------------------------------------------------ */
 /* Dashboard page: BDM picker -> accounts owned by that rep -> drill-down */
 /* ------------------------------------------------------------------ */
-function renderBDMList(){
-  const q = state.bdmSearch.trim().toLowerCase();
+// Shared rep list markup — used by the Dashboard page's BDM panel AND the
+// Filters panel's "Sales Rep" section, since both read/write the same
+// state.rep. A pinned "All Sales Reps" row (unaffected by the search box)
+// sits at the top so either panel can explicitly reset to unfiltered.
+function repListHTML(query){
+  const q = (query||'').trim().toLowerCase();
   const reps = ALL_REP_KEYS.filter(k => !q || (k===NO_REP ? 'no rep assigned' : k.toLowerCase()).includes(q));
-  document.getElementById('bdmList').innerHTML = reps.map(k => `
-    <div class="bdm-item ${state.dashboardRep===k?'active':''}" onclick="selectBDM('${k.replace(/'/g,"\\'")}')">
+  const allRow = `<div class="bdm-item ${!state.rep?'active':''}" onclick="selectRep('')">
+      <span class="rep-dot" style="background:#c7cedb"></span>All Sales Reps
+    </div>`;
+  const rows = reps.map(k => `
+    <div class="bdm-item ${state.rep===k?'active':''}" onclick="selectRep('${k.replace(/'/g,"\\'")}')">
       <span class="rep-dot" style="background:${REP_COLOR[k]}"></span>${esc(k===NO_REP ? 'No Rep Assigned' : k)}
     </div>
-  `).join('') || '<p style="color:var(--ink-muted);font-size:13px;">No matching reps.</p>';
+  `).join('');
+  return allRow + (rows || (q ? '<p style="color:var(--ink-muted);font-size:13px;padding:6px 10px;margin:0;">No matching reps.</p>' : ''));
 }
-function selectBDM(key){
-  state.dashboardRep = key;
+function renderBDMList(){ document.getElementById('bdmList').innerHTML = repListHTML(state.bdmSearch); }
+function renderFilterRepList(){ document.getElementById('fRepList').innerHTML = repListHTML(state.filterRepSearch); }
+function selectRep(key){
+  state.rep = key;
   state.selectedAccount = null;
   render();
 }
 document.getElementById('bdmSearch').addEventListener('input', e => { state.bdmSearch = e.target.value; renderBDMList(); });
+document.getElementById('fRepSearch').addEventListener('input', e => { state.filterRepSearch = e.target.value; renderFilterRepList(); });
 
 function renderDashboardPage(){
-  const lines = filteredLines(state.dashboardRep); // scoped to the BDM picked on this page, not the global rep filter
+  const lines = filteredLines();
   const accounts = aggregateAccounts(lines).sort((a,b) => b.revenue - a.revenue);
 
   renderBDMList();
-  const repLabelText = state.dashboardRep ? (state.dashboardRep===NO_REP ? 'No Rep Assigned' : esc(state.dashboardRep)) : 'All Reps';
+  const repLabelText = state.rep ? (state.rep===NO_REP ? 'No Rep Assigned' : esc(state.rep)) : 'All Reps';
   document.getElementById('dashAccountsHeading').innerHTML = `Accounts owned by <b>${repLabelText}</b>`;
-  document.getElementById('dashAcctTableHeading').textContent = 'Accounts owned by ' + (state.dashboardRep ? (state.dashboardRep===NO_REP?'No Rep Assigned':state.dashboardRep) : 'All Reps');
+  document.getElementById('dashAcctTableHeading').textContent = 'Accounts owned by ' + (state.rep ? (state.rep===NO_REP?'No Rep Assigned':state.rep) : 'All Reps');
 
   const totalPurchase = accounts.reduce((s,a) => s + a.revenue, 0);
   const totalOrders = new Set(lines.map(l => l.order_no)).size;
@@ -1034,6 +1044,27 @@ function updateDateRangeBtnLabel(){
 function openFilters(){ document.getElementById('filterOverlay').classList.add('open'); }
 function closeFilters(){ document.getElementById('filterOverlay').classList.remove('open'); }
 
+function renderTypeList(){
+  const allRow = `<div class="bdm-item ${!state.type?'active':''}" onclick="selectType('')">All Customer Types</div>`;
+  const rows = ALL_TYPES.map(t => `<div class="bdm-item ${state.type===t?'active':''}" onclick="selectType('${t.replace(/'/g,"\\'")}')">${esc(t)}</div>`).join('');
+  document.getElementById('fTypeList').innerHTML = allRow + rows;
+}
+function selectType(t){ state.type = t; render(); }
+
+function renderWarehouseList(){
+  const allRow = `<div class="bdm-item ${!state.warehouse?'active':''}" onclick="selectWarehouse('')">All Warehouses</div>`;
+  const rows = ALL_WAREHOUSES.map(w => `<div class="bdm-item ${state.warehouse===w?'active':''}" onclick="selectWarehouse('${w.replace(/'/g,"\\'")}')">${esc(w)}</div>`).join('');
+  document.getElementById('fWarehouseList').innerHTML = allRow + rows;
+}
+function selectWarehouse(w){ state.warehouse = w; render(); }
+
+const DATE_RANGE_OPTIONS = ['all','this_week','this_month','last_month','custom'];
+function renderDateList(){
+  document.getElementById('fDateList').innerHTML = DATE_RANGE_OPTIONS.map(k => `<div class="bdm-item ${state.dateRange===k?'active':''}" onclick="selectDateRange('${k}')">${DATE_RANGE_LABEL[k]}${k==='custom'?'…':''}</div>`).join('');
+  document.getElementById('fCustomWrap').style.display = state.dateRange === 'custom' ? '' : 'none';
+}
+function selectDateRange(key){ state.dateRange = key; render(); }
+
 /* ------------------------------------------------------------------ */
 /* Master render: compute shared aggregates once, dispatch by page     */
 /* ------------------------------------------------------------------ */
@@ -1049,28 +1080,20 @@ function render(){
   else if(state.page === 'products') renderProductsPage(products);
   else if(state.page === 'reports') renderReportsPage(lines, accounts, products);
 
+  renderFilterRepList();
+  renderTypeList();
+  renderWarehouseList();
+  renderDateList();
+
   document.getElementById('pageSubtitle').textContent = state.page === 'dashboard'
-    ? PAGE_META.dashboard.subtitle
+    ? PAGE_META.dashboard.subtitle + activeFilterSummary({skipRep:true})
     : PAGE_META[state.page].subtitle + activeFilterSummary();
 
   updateSortArrows();
   updateDateRangeBtnLabel();
 }
 
-['fRep','fType','fWarehouse'].forEach(id => {
-  document.getElementById(id).addEventListener('change', e => {
-    state[id === 'fRep' ? 'rep' : id === 'fType' ? 'type' : 'warehouse'] = e.target.value;
-    render();
-  });
-});
 document.getElementById('fSearch').addEventListener('input', e => { state.search = e.target.value; render(); });
-
-document.getElementById('fDateRange').addEventListener('change', e => {
-  state.dateRange = e.target.value;
-  const isCustom = state.dateRange === 'custom';
-  document.getElementById('fCustomWrap').style.display = isCustom ? '' : 'none';
-  render();
-});
 document.getElementById('fCustomStart').addEventListener('change', e => { state.customStart = e.target.value; render(); });
 document.getElementById('fCustomEnd').addEventListener('change', e => { state.customEnd = e.target.value; render(); });
 document.getElementById('fProductOnly').addEventListener('change', e => { state.productLinesOnly = e.target.checked; render(); });
