@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sales Rep Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --ink-primary:#1a2233;
+    --ink-secondary:#5b6577;
+    --ink-muted:#8a93a3;
+    --surface:#f5f6f8;
+    --surface-card:#ffffff;
+    --border:#e4e7ec;
+    --brand:#2a78d6;
+    --brand-dark:#1c5cab;
+    --good:#0ca30c;
+    --radius:12px;
+    /* categorical slots — fixed order, never reassigned by filters */
+    --s1:#2a78d6; /* blue */
+    --s2:#eb6834; /* orange */
+    --s3:#1baf7a; /* aqua */
+    --s4:#eda100; /* yellow */
+    --s5:#e87ba4; /* magenta */
+    --s6:#008300; /* green */
+    --s7:#4a3aa7; /* violet */
+    --s8:#e34948; /* red */
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--surface);
+    color:var(--ink-primary);
+  }
+  .wrap{max-width:1240px;margin:0 auto;padding:28px 24px 60px;}
+  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap;}
+  h1{font-size:22px;margin:0 0 4px;letter-spacing:-0.01em;}
+  .subtitle{color:var(--ink-secondary);font-size:14px;margin:0;}
+  .status-pill{
+    display:inline-flex;align-items:center;gap:6px;flex-shrink:0;
+    background:#eef6ee;color:#1a6b2f;border:1px solid #cfe8d2;
+    padding:5px 12px;border-radius:100px;font-size:12.5px;font-weight:600;
+  }
+  .status-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--good);}
+  .status-pill.stale{background:#fff4e0;color:#8a5b00;border-color:#f0d59a;}
+  .status-pill.stale .dot{background:#c98a05;}
+  .top-actions{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  .import-btn{
+    appearance:none;border:1px solid var(--brand);background:var(--brand);color:#fff;
+    padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;
+  }
+  .import-btn:hover{background:var(--brand-dark);}
+  .import-btn:disabled{opacity:.6;cursor:default;}
+  .import-msg{font-size:12.5px;margin:-14px 0 14px;min-height:1em;}
+  .import-msg.ok{color:var(--good);}
+  .import-msg.err{color:#c0392b;}
+  .import-msg.busy{color:var(--ink-secondary);}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px;}
+  .stat-card{background:var(--surface-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+  .stat-label{font-size:12.5px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
+  .stat-value{font-size:26px;font-weight:700;letter-spacing:-0.02em;}
+  .stat-sub{font-size:12.5px;color:var(--ink-secondary);margin-top:4px;}
+
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:18px;}
+  .tab-btn{appearance:none;border:none;background:none;cursor:pointer;padding:10px 16px;font-size:14px;font-weight:600;color:var(--ink-muted);border-bottom:2px solid transparent;margin-bottom:-1px;}
+  .tab-btn.active{color:var(--brand);border-bottom-color:var(--brand);}
+  .tab-btn:hover:not(.active){color:var(--ink-secondary);}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px;}
+  .toolbar select, .toolbar input[type="text"]{
+    border:1px solid var(--border);background:#fff;border-radius:8px;padding:8px 12px;font-size:13.5px;color:var(--ink-primary);min-width:150px;
+  }
+  .toolbar input[type="text"]{min-width:210px;}
+  .toolbar input.date-input{min-width:0;padding:8px 10px;}
+  .toolbar .grow{flex:1;}
+  .toolbar .result-count{font-size:12.5px;color:var(--ink-muted);white-space:nowrap;}
+  .chk{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--ink-secondary);cursor:pointer;}
+  .chk input{cursor:pointer;}
+  .chk-hint{color:var(--ink-muted);font-size:12px;}
+
+  .card{background:var(--surface-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+  .card-head{padding:16px 18px 4px;display:flex;align-items:baseline;justify-content:space-between;}
+  .card-head h2{font-size:15px;margin:0;}
+  .card-head .count{font-size:12.5px;color:var(--ink-muted);}
+
+  .table-scroll{max-height:560px;overflow:auto;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  thead th{position:sticky;top:0;background:var(--surface-card);text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-muted);font-weight:700;padding:10px 18px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:default;}
+  thead th.num, tbody td.num{text-align:right;}
+  tbody td{padding:11px 18px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#fafbfc;}
+  .rep-name{font-weight:600;}
+  .rep-email{color:var(--ink-muted);font-size:12px;display:block;font-weight:400;}
+  .rep-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;flex-shrink:0;vertical-align:middle;}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:100px;background:#e8f6ee;color:var(--good);}
+  .badge .idot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+  .empty-row td{color:var(--ink-muted);text-align:center;padding:30px 18px;}
+
+  .two-col{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:18px;align-items:start;}
+  @media (max-width: 900px){ .stats{grid-template-columns:repeat(2,1fr);} .two-col{grid-template-columns:1fr;} }
+
+  .chart-card{padding:18px;}
+  .chart-scroll{max-height:400px;overflow-y:auto;}
+  .chart-row{margin-bottom:13px;}
+  .chart-row:last-child{margin-bottom:0;}
+  .chart-top{display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin-bottom:5px;}
+  .chart-label{flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--ink-secondary);word-break:break-word;line-height:1.35;display:flex;align-items:center;gap:6px;}
+  .chart-label .rep-dot{flex-shrink:0;}
+  .chart-value{flex-shrink:0;font-size:12.5px;font-weight:700;white-space:nowrap;color:var(--ink-primary);text-align:right;}
+  .chart-value-sub{display:block;font-weight:400;color:var(--ink-muted);font-size:11px;}
+  .chart-track{background:#eef0f3;border-radius:4px;height:14px;position:relative;overflow:hidden;}
+  .chart-fill{height:100%;border-radius:4px;}
+
+  .note{margin-top:20px;padding:12px 16px;border:1px dashed #c9d3e0;border-radius:10px;font-size:12.5px;color:var(--ink-secondary);background:#f8f9fb;}
+  .note b{color:var(--ink-primary);}
+  th.sortable{cursor:pointer;user-select:none;}
+  th.sortable:hover{color:var(--ink-secondary);}
+  th.sortable .arrow{opacity:.4;margin-left:3px;}
+  th.sortable.active .arrow{opacity:1;color:var(--brand);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div>
+      <h1>Sales Rep Dashboard</h1>
+      <p class="subtitle">Sales Rep Performance — Per Account (Customer) &amp; Per Sales Order · Source: Unleashed Sales</p>
+    </div>
+    <div class="top-actions">
+      <span class="status-pill" id="dataStatusPill"><span class="dot"></span>Loading…</span>
+      <button class="import-btn" id="importBtn" onclick="document.getElementById('importFile').click()">Import Data</button>
+      <input type="file" id="importFile" accept=".xlsx,.xls" style="display:none" />
+    </div>
+  </div>
+  <p class="import-msg" id="importMsg"></p>
+
+  <div class="stats" id="statTiles"></div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="setTab('account')" id="tabBtnAccount">By Account</button>
+    <button class="tab-btn" onclick="setTab('order')" id="tabBtnOrder">By Sales Order</button>
+    <button class="tab-btn" onclick="setTab('product')" id="tabBtnProduct">By Product</button>
+  </div>
+
+  <div class="toolbar">
+    <select id="fRep"></select>
+    <select id="fType"></select>
+    <select id="fWarehouse"></select>
+    <select id="fDateRange">
+      <option value="all">All Time</option>
+      <option value="this_week">This Week</option>
+      <option value="this_month">This Month</option>
+      <option value="last_month">Last Month</option>
+      <option value="custom">Custom Range…</option>
+    </select>
+    <input type="date" id="fCustomStart" class="date-input" style="display:none" />
+    <input type="date" id="fCustomEnd" class="date-input" style="display:none" />
+    <input type="text" id="fSearch" class="grow" placeholder="Search customer, order no. or product code…" />
+    <span class="result-count" id="resultCount"></span>
+  </div>
+  <div class="toolbar" style="margin-top:-8px;">
+    <label class="chk"><input type="checkbox" id="fProductOnly" /> Product Lines Only <span class="chk-hint">(excludes delivery / install / credit lines from By Product)</span></label>
+  </div>
+
+  <div id="tab-account">
+    <div class="two-col">
+      <div class="card">
+        <div class="card-head"><h2>Revenue by Sales Rep</h2><span class="count" id="repChartCount"></span></div>
+        <div class="chart-card"><div class="chart-scroll" id="repChart"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Top Accounts</h2><span class="count" id="acctChartCount">by revenue</span></div>
+        <div class="chart-card"><div id="acctChart"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Sales Rep — Per Account (Customer)</h2><span class="count" id="acctTableCount"></span></div>
+      <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="sortable" data-sort="rep" onclick="sortAccount('rep')">Sales Rep <span class="arrow">↕</span></th>
+            <th class="sortable" data-sort="customer" onclick="sortAccount('customer')">Customer <span class="arrow">↕</span></th>
+            <th>Customer Type</th>
+            <th class="num sortable" data-sort="orders" onclick="sortAccount('orders')">Orders <span class="arrow">↕</span></th>
+            <th class="num sortable" data-sort="qty" onclick="sortAccount('qty')">Total Qty <span class="arrow">↕</span></th>
+            <th class="num sortable active" data-sort="revenue" onclick="sortAccount('revenue')">Total Revenue <span class="arrow">↕</span></th>
+            <th class="sortable" data-sort="last" onclick="sortAccount('last')">Last Order Date <span class="arrow">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="acctBody"></tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-order" style="display:none">
+    <div class="card">
+      <div class="card-head"><h2>Sales Rep — Per Sales Order</h2><span class="count" id="orderTableCount"></span></div>
+      <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="sortable" data-sort="order" onclick="sortOrder('order')">Order No. <span class="arrow">↕</span></th>
+            <th class="sortable" data-sort="customer" onclick="sortOrder('customer')">Customer <span class="arrow">↕</span></th>
+            <th class="sortable" data-sort="rep" onclick="sortOrder('rep')">Sales Rep <span class="arrow">↕</span></th>
+            <th class="sortable active" data-sort="date" onclick="sortOrder('date')">Completed Date <span class="arrow">↕</span></th>
+            <th>Products</th>
+            <th>Warehouse</th>
+            <th>Customer Type</th>
+            <th>Status</th>
+            <th class="num sortable" data-sort="qty" onclick="sortOrder('qty')">Qty <span class="arrow">↕</span></th>
+            <th class="num sortable" data-sort="revenue" onclick="sortOrder('revenue')">Sub Total <span class="arrow">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="orderBody"></tbody>
+      </table>
+      </div>
+    </div>
+    <p class="note">Note: <b>Per Sales Order</b> rolls up every line on the order (product lines + delivery/credit/adjustment lines), so the total shown matches the order's real value in Unleashed — not just one product line.</p>
+  </div>
+
+  <div id="tab-product" style="display:none">
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head"><h2>Top Products<span id="productChartRepLabel"></span></h2><span class="count" id="productChartCount"></span></div>
+      <div class="chart-card"><div class="chart-scroll" id="productChart"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Sales Rep — Top Products</h2><span class="count" id="productTableCount"></span></div>
+      <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="sortable" data-sort="rep" onclick="sortProduct('rep')">Sales Rep <span class="arrow">↕</span></th>
+            <th class="sortable" data-sort="product" onclick="sortProduct('product')">Product Code <span class="arrow">↕</span></th>
+            <th class="num sortable" data-sort="orders" onclick="sortProduct('orders')">Orders <span class="arrow">↕</span></th>
+            <th class="num sortable active" data-sort="qty" onclick="sortProduct('qty')">Total Qty <span class="arrow">↕</span></th>
+            <th class="num sortable" data-sort="revenue" onclick="sortProduct('revenue')">Total Revenue <span class="arrow">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="productBody"></tbody>
+      </table>
+      </div>
+    </div>
+    <p class="note">Note: a few "Product Code" values in the export are delivery, install-service or credit/adjustment lines rather than physical products (e.g. <b>MSS-Delivery</b>, <b>DOOR LOCK INSTALLATION++...</b>). Tick <b>Product Lines Only</b> above to hide those from this tab — order totals elsewhere are unaffected either way. Filter by Sales Rep to see one rep's top sellers.</p>
+  </div>
+
+</div>
+
+<script>
+// Reuses the same Supabase project as the Sales Price & Inventory Dashboard
+// ("Other-Dashboard"). This key is a public/publishable key, safe to embed —
+// see the note on SUPA_KEY below for what actually protects the data.
+const SUPA_URL = 'https://tfpgywqmwnjesesfcmcg.supabase.co';
+const SUPA_KEY = 'sb_publishable_j6MIouzm484dXuHqH76JNw_39ol8cBx';
+const TABLE = 'sales_order_lines';
+
+/* No login on this dashboard (by design, for now): viewing is open to anyone
+   with the link. The database itself only allows two things from this public
+   key — reading rows, and adding new rows (append). There is no policy that
+   lets it update or delete existing rows, so nobody can use this key to wipe
+   or corrupt the data; each import just adds a new batch alongside the old
+   ones, and the dashboard always shows the most recent batch. Revisit this
+   once real login is added. */
+let LINES = [];
+
+async function fetchLatestBatch(){
+  const latestRes = await fetch(
+    `${SUPA_URL}/rest/v1/${TABLE}?select=batch_id,imported_at&order=imported_at.desc&limit=1`,
+    { headers: { apikey: SUPA_KEY } }
+  );
+  if(!latestRes.ok) throw new Error('Could not reach the database (' + latestRes.status + ')');
+  const latest = await latestRes.json();
+  if(!latest.length) return { rows: [], importedAt: null };
+  const batchId = latest[0].batch_id;
+  const rowsRes = await fetch(
+    `${SUPA_URL}/rest/v1/${TABLE}?select=*&batch_id=eq.${encodeURIComponent(batchId)}&order=id.asc`,
+    { headers: { apikey: SUPA_KEY } }
+  );
+  if(!rowsRes.ok) throw new Error('Could not load the data (' + rowsRes.status + ')');
+  const rows = await rowsRes.json();
+  return { rows, importedAt: latest[0].imported_at };
+}
+
+function setStatusPill(text, stale){
+  const el = document.getElementById('dataStatusPill');
+  el.classList.toggle('stale', !!stale);
+  el.innerHTML = '<span class="dot"></span>' + esc(text);
+}
+
+function setImportMsg(text, kind){
+  const el = document.getElementById('importMsg');
+  el.textContent = text || '';
+  el.className = 'import-msg' + (kind ? ' ' + kind : '');
+}
+
+const PALETTE = ['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#4a3aa7','#e34948'];
+const NO_REP = '__none__';
+
+function repKey(l){ return l.rep_name || NO_REP; }
+function repLabel(l){ return l.rep_name || 'No Rep Assigned'; }
+function fmtMoney(n){ return '$' + (n||0).toLocaleString('en-AU', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtDate(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-AU', {day:'2-digit', month:'2-digit', year:'numeric'}) + ' ' +
+         d.toLocaleTimeString('en-AU', {hour:'numeric', minute:'2-digit'});
+}
+function fmtDateOnly(iso){
+  if(!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-AU', {day:'2-digit', month:'2-digit', year:'numeric'});
+}
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// Lines whose "Product Code" is really a delivery / installation-service / credit-adjustment
+// line rather than a physical product — same data, just not a "product" for this purpose.
+function isNonProductCode(code){
+  if(!code) return false;
+  if(code.includes('++')) return true; // e.g. "DOOR LOCK INSTALLATION++DEADBOLT"
+  if(code === 'MSS-Delivery') return true;
+  if(code === '\\C') return true;
+  return false;
+}
+
+// Fixed color assignment — recomputed each time data loads, from the FULL
+// dataset, never reassigned by filters within a session.
+let ALL_REP_KEYS = [];
+let REP_COLOR = {};
+
+// Populate filter dropdowns from the full dataset
+function populateSelect(el, values, allLabel){
+  const prev = el.value;
+  el.innerHTML = '<option value="">' + allLabel + '</option>' +
+    values.map(v => `<option value="${esc(v.key)}">${esc(v.label)}</option>`).join('');
+  if(values.some(v => v.key === prev)) el.value = prev;
+}
+
+function rebuildFromLines(){
+  ALL_REP_KEYS = [...new Set(LINES.map(repKey))].sort((a,b) => {
+    if(a===NO_REP) return 1;
+    if(b===NO_REP) return -1;
+    return repLabel(LINES.find(l=>repKey(l)===a)).localeCompare(repLabel(LINES.find(l=>repKey(l)===b)));
+  });
+  REP_COLOR = {};
+  ALL_REP_KEYS.forEach((k,i) => { REP_COLOR[k] = PALETTE[i % PALETTE.length]; });
+
+  populateSelect(document.getElementById('fRep'), ALL_REP_KEYS.map(k => ({key:k, label: k===NO_REP ? 'No Rep Assigned' : k})), 'All Sales Reps');
+  const types = [...new Set(LINES.map(l => l.customer_type || 'Unspecified'))].sort();
+  populateSelect(document.getElementById('fType'), types.map(t => ({key:t, label:t})), 'All Customer Types');
+  const whs = [...new Set(LINES.map(l => l.warehouse || 'Unspecified'))].sort();
+  populateSelect(document.getElementById('fWarehouse'), whs.map(w => ({key:w, label:w})), 'All Warehouses');
+}
+
+let state = { rep:'', type:'', warehouse:'', search:'', tab:'account', dateRange:'all', customStart:'', customEnd:'', productLinesOnly:false,
+  acctSort:{key:'revenue', dir:'desc'}, orderSort:{key:'date', dir:'desc'}, productSort:{key:'qty', dir:'desc'} };
+
+// Bounds for the chosen date range. Returns [start, end) — end is exclusive so a
+// same-day range still matches. Null on either side means "no bound that side".
+function getRangeBounds(key){
+  const now = new Date();
+  if(key === 'this_week'){
+    const day = now.getDay(); // 0=Sun..6=Sat — week starts Monday
+    const diffToMonday = (day === 0 ? -6 : 1 - day);
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday);
+    const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7);
+    return [start, end];
+  }
+  if(key === 'this_month'){
+    return [new Date(now.getFullYear(), now.getMonth(), 1), new Date(now.getFullYear(), now.getMonth() + 1, 1)];
+  }
+  if(key === 'last_month'){
+    return [new Date(now.getFullYear(), now.getMonth() - 1, 1), new Date(now.getFullYear(), now.getMonth(), 1)];
+  }
+  if(key === 'custom'){
+    const start = state.customStart ? new Date(state.customStart + 'T00:00:00') : null;
+    let end = state.customEnd ? new Date(state.customEnd + 'T00:00:00') : null;
+    if(end) end = new Date(end.getFullYear(), end.getMonth(), end.getDate() + 1); // inclusive of end day
+    return [start, end];
+  }
+  return [null, null];
+}
+
+function filteredLines(){
+  const q = state.search.trim().toLowerCase();
+  const [rangeStart, rangeEnd] = state.dateRange !== 'all' ? getRangeBounds(state.dateRange) : [null, null];
+  return LINES.filter(l => {
+    if(state.rep && repKey(l) !== state.rep) return false;
+    if(state.type && (l.customer_type || 'Unspecified') !== state.type) return false;
+    if(state.warehouse && (l.warehouse || 'Unspecified') !== state.warehouse) return false;
+    if(rangeStart || rangeEnd){
+      const d = l.completed_date ? new Date(l.completed_date) : null;
+      if(!d) return false;
+      if(rangeStart && d < rangeStart) return false;
+      if(rangeEnd && d >= rangeEnd) return false;
+    }
+    if(q && !((l.customer||'').toLowerCase().includes(q) || (l.order_no||'').toLowerCase().includes(q) || (l.product_code||'').toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+
+function aggregateAccounts(lines){
+  const map = new Map();
+  for(const l of lines){
+    const key = repKey(l) + '||' + l.customer;
+    if(!map.has(key)) map.set(key, {
+      repKey: repKey(l), rep: repLabel(l), customer: l.customer, customer_type: l.customer_type || 'Unspecified',
+      orders: new Set(), qty: 0, revenue: 0, last: null,
+    });
+    const a = map.get(key);
+    a.orders.add(l.order_no);
+    a.qty += (l.quantity||0);
+    a.revenue += (l.sub_total||0);
+    if(!a.last || new Date(l.completed_date) > new Date(a.last)) a.last = l.completed_date;
+  }
+  return [...map.values()].map(a => ({...a, orders: a.orders.size}));
+}
+
+function aggregateOrders(lines){
+  const map = new Map();
+  for(const l of lines){
+    if(!map.has(l.order_no)) map.set(l.order_no, {
+      order_no: l.order_no, customer: l.customer, repKey: repKey(l), rep: repLabel(l),
+      date: l.completed_date, warehouse: l.warehouse || 'Unspecified', customer_type: l.customer_type || 'Unspecified',
+      status: l.status, qty: 0, revenue: 0, products: [],
+    });
+    const o = map.get(l.order_no);
+    o.qty += (l.quantity||0);
+    o.revenue += (l.sub_total||0);
+    if(l.product_code) o.products.push(l.product_code);
+  }
+  return [...map.values()];
+}
+
+function aggregateProducts(lines, productLinesOnly){
+  const map = new Map();
+  for(const l of lines){
+    if(!l.product_code) continue;
+    if(productLinesOnly && isNonProductCode(l.product_code)) continue;
+    const key = repKey(l) + '||' + l.product_code;
+    if(!map.has(key)) map.set(key, {
+      repKey: repKey(l), rep: repLabel(l), product_code: l.product_code, orders: new Set(), qty: 0, revenue: 0,
+    });
+    const p = map.get(key);
+    p.orders.add(l.order_no);
+    p.qty += (l.quantity||0);
+    p.revenue += (l.sub_total||0);
+  }
+  return [...map.values()].map(p => ({...p, orders: p.orders.size}));
+}
+
+function sortRows(rows, sort, getters){
+  const dir = sort.dir === 'asc' ? 1 : -1;
+  const get = getters[sort.key];
+  return rows.slice().sort((a,b) => {
+    const av = get(a), bv = get(b);
+    if(av == null && bv == null) return 0;
+    if(av == null) return 1;
+    if(bv == null) return -1;
+    if(typeof av === 'string') return dir * av.localeCompare(bv);
+    return dir * (av - bv);
+  });
+}
+
+const ACCOUNT_GETTERS = {
+  rep: r => r.rep, customer: r => r.customer, orders: r => r.orders, qty: r => r.qty,
+  revenue: r => r.revenue, last: r => r.last ? new Date(r.last).getTime() : null,
+};
+const ORDER_GETTERS = {
+  order: r => r.order_no, customer: r => r.customer, rep: r => r.rep,
+  date: r => r.date ? new Date(r.date).getTime() : null, qty: r => r.qty, revenue: r => r.revenue,
+};
+const PRODUCT_GETTERS = {
+  rep: r => r.rep, product: r => r.product_code, orders: r => r.orders, qty: r => r.qty, revenue: r => r.revenue,
+};
+
+function sortAccount(key){
+  if(state.acctSort.key === key) state.acctSort.dir = state.acctSort.dir === 'asc' ? 'desc' : 'asc';
+  else state.acctSort = {key, dir: (key==='rep'||key==='customer') ? 'asc' : 'desc'};
+  render();
+}
+function sortOrder(key){
+  if(state.orderSort.key === key) state.orderSort.dir = state.orderSort.dir === 'asc' ? 'desc' : 'asc';
+  else state.orderSort = {key, dir: (key==='order'||key==='customer'||key==='rep') ? 'asc' : 'desc'};
+  render();
+}
+function sortProduct(key){
+  if(state.productSort.key === key) state.productSort.dir = state.productSort.dir === 'asc' ? 'desc' : 'asc';
+  else state.productSort = {key, dir: (key==='rep'||key==='product') ? 'asc' : 'desc'};
+  render();
+}
+
+function setTab(name){
+  state.tab = name;
+  document.getElementById('tab-account').style.display = name === 'account' ? '' : 'none';
+  document.getElementById('tab-order').style.display = name === 'order' ? '' : 'none';
+  document.getElementById('tab-product').style.display = name === 'product' ? '' : 'none';
+  document.getElementById('tabBtnAccount').classList.toggle('active', name === 'account');
+  document.getElementById('tabBtnOrder').classList.toggle('active', name === 'order');
+  document.getElementById('tabBtnProduct').classList.toggle('active', name === 'product');
+}
+
+function updateSortArrows(){
+  document.querySelectorAll('#tab-account th.sortable').forEach(th => {
+    const k = th.dataset.sort;
+    th.classList.toggle('active', k === state.acctSort.key);
+    th.querySelector('.arrow').textContent = k === state.acctSort.key ? (state.acctSort.dir === 'asc' ? '↑' : '↓') : '↕';
+  });
+  document.querySelectorAll('#tab-order th.sortable').forEach(th => {
+    const k = th.dataset.sort;
+    th.classList.toggle('active', k === state.orderSort.key);
+    th.querySelector('.arrow').textContent = k === state.orderSort.key ? (state.orderSort.dir === 'asc' ? '↑' : '↓') : '↕';
+  });
+  document.querySelectorAll('#tab-product th.sortable').forEach(th => {
+    const k = th.dataset.sort;
+    th.classList.toggle('active', k === state.productSort.key);
+    th.querySelector('.arrow').textContent = k === state.productSort.key ? (state.productSort.dir === 'asc' ? '↑' : '↓') : '↕';
+  });
+}
+
+function renderStats(lines){
+  const revenue = lines.reduce((s,l) => s + (l.sub_total||0), 0);
+  const orders = new Set(lines.map(l => l.order_no)).size;
+  const accounts = new Set(lines.map(l => l.customer)).size;
+  const reps = new Set(lines.map(repKey)).size;
+  const hasUnassigned = lines.some(l => repKey(l) === NO_REP);
+  const avgOrder = orders ? revenue / orders : 0;
+  document.getElementById('statTiles').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-value">${fmtMoney(revenue)}</div><div class="stat-sub">${orders} sales orders</div></div>
+    <div class="stat-card"><div class="stat-label">Sales Orders</div><div class="stat-value">${orders}</div><div class="stat-sub">${lines.length} line items</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Order Value</div><div class="stat-value">${fmtMoney(avgOrder)}</div><div class="stat-sub">per sales order</div></div>
+    <div class="stat-card"><div class="stat-label">Accounts</div><div class="stat-value">${accounts}</div><div class="stat-sub">unique customers</div></div>
+    <div class="stat-card"><div class="stat-label">Sales Reps</div><div class="stat-value">${reps}</div><div class="stat-sub">${hasUnassigned ? 'incl. unassigned' : 'active reps'}</div></div>
+  `;
+}
+
+function renderRepChart(accounts){
+  const byRep = new Map();
+  for(const a of accounts){
+    if(!byRep.has(a.repKey)) byRep.set(a.repKey, {rep:a.rep, repKey:a.repKey, revenue:0, orders:0});
+    const r = byRep.get(a.repKey);
+    r.revenue += a.revenue;
+    r.orders += a.orders; // safe: each order belongs to exactly one account, so this never double-counts
+  }
+  const rows = [...byRep.values()].sort((a,b) => b.revenue - a.revenue);
+  const max = rows.length ? rows[0].revenue : 1;
+  document.getElementById('repChartCount').textContent = rows.length + ' rep' + (rows.length===1?'':'s');
+  document.getElementById('repChart').innerHTML = rows.map(r => `
+    <div class="chart-row">
+      <div class="chart-top">
+        <div class="chart-label"><span class="rep-dot" style="background:${REP_COLOR[r.repKey]}"></span>${esc(r.rep)}</div>
+        <div class="chart-value">${fmtMoney(r.revenue)}<span class="chart-value-sub">avg ${fmtMoney(r.orders ? r.revenue / r.orders : 0)} / order</span></div>
+      </div>
+      <div class="chart-track"><div class="chart-fill" style="width:${max?(r.revenue/max*100):0}%;background:${REP_COLOR[r.repKey]}"></div></div>
+    </div>
+  `).join('') || '<p style="color:var(--ink-muted);font-size:13px;margin:0;">No data for this filter.</p>';
+}
+
+function renderAcctChart(accounts){
+  const byCust = new Map();
+  for(const a of accounts){
+    if(!byCust.has(a.customer)) byCust.set(a.customer, 0);
+    byCust.set(a.customer, byCust.get(a.customer) + a.revenue);
+  }
+  const rows = [...byCust.entries()].map(([customer,revenue]) => ({customer,revenue})).sort((a,b) => b.revenue - a.revenue).slice(0,8);
+  const max = rows.length ? rows[0].revenue : 1;
+  document.getElementById('acctChartCount').textContent = 'top ' + rows.length + ' of ' + byCust.size;
+  document.getElementById('acctChart').innerHTML = rows.map(r => `
+    <div class="chart-row">
+      <div class="chart-top">
+        <div class="chart-label">${esc(r.customer)}</div>
+        <div class="chart-value">${fmtMoney(r.revenue)}</div>
+      </div>
+      <div class="chart-track"><div class="chart-fill" style="width:${max?(r.revenue/max*100):0}%;background:var(--brand)"></div></div>
+    </div>
+  `).join('') || '<p style="color:var(--ink-muted);font-size:13px;margin:0;">No data for this filter.</p>';
+}
+
+function renderAccountTable(accounts){
+  const sorted = sortRows(accounts, state.acctSort, ACCOUNT_GETTERS);
+  document.getElementById('acctTableCount').textContent = sorted.length + ' account' + (sorted.length===1?'':'s');
+  document.getElementById('acctBody').innerHTML = sorted.length ? sorted.map(a => `
+    <tr>
+      <td><span class="rep-dot" style="background:${REP_COLOR[a.repKey]}"></span><span class="rep-name">${esc(a.rep)}</span></td>
+      <td>${esc(a.customer)}</td>
+      <td>${esc(a.customer_type)}</td>
+      <td class="num">${a.orders}</td>
+      <td class="num">${a.qty}</td>
+      <td class="num">${fmtMoney(a.revenue)}</td>
+      <td>${fmtDateOnly(a.last)}</td>
+    </tr>
+  `).join('') : '<tr class="empty-row"><td colspan="7">No accounts match the current filters.</td></tr>';
+}
+
+function productsCell(products){
+  if(!products.length) return '—';
+  const shown = products.slice(0,2).join(', ');
+  const extra = products.length > 2 ? ` +${products.length - 2} more` : '';
+  return `<span title="${esc(products.join(', '))}">${esc(shown)}${esc(extra)}</span>`;
+}
+
+function renderOrderTable(orders){
+  const sorted = sortRows(orders, state.orderSort, ORDER_GETTERS);
+  document.getElementById('orderTableCount').textContent = sorted.length + ' order' + (sorted.length===1?'':'s');
+  document.getElementById('orderBody').innerHTML = sorted.length ? sorted.map(o => `
+    <tr>
+      <td>${esc(o.order_no)}</td>
+      <td>${esc(o.customer)}</td>
+      <td><span class="rep-dot" style="background:${REP_COLOR[o.repKey]}"></span>${esc(o.rep)}</td>
+      <td>${fmtDate(o.date)}</td>
+      <td>${productsCell(o.products)}</td>
+      <td>${esc(o.warehouse)}</td>
+      <td>${esc(o.customer_type)}</td>
+      <td><span class="badge"><span class="idot"></span>${esc(o.status)}</span></td>
+      <td class="num">${o.qty}</td>
+      <td class="num">${fmtMoney(o.revenue)}</td>
+    </tr>
+  `).join('') : '<tr class="empty-row"><td colspan="10">No orders match the current filters.</td></tr>';
+}
+
+function renderProductChart(products){
+  const rows = products.slice().sort((a,b) => b.qty - a.qty).slice(0,10);
+  const max = rows.length ? rows[0].qty : 1;
+  const repLabelEl = document.getElementById('productChartRepLabel');
+  repLabelEl.textContent = state.rep ? ' — ' + (state.rep===NO_REP ? 'No Rep Assigned' : state.rep) : ' — All Reps';
+  document.getElementById('productChartCount').textContent = 'top ' + rows.length + ' of ' + products.length + ' by qty sold';
+  document.getElementById('productChart').innerHTML = rows.map(r => `
+    <div class="chart-row">
+      <div class="chart-top">
+        <div class="chart-label" title="${esc(r.product_code)}">${esc(r.product_code)}</div>
+        <div class="chart-value">${r.qty} sold</div>
+      </div>
+      <div class="chart-track"><div class="chart-fill" style="width:${max?(r.qty/max*100):0}%;background:var(--brand)"></div></div>
+    </div>
+  `).join('') || '<p style="color:var(--ink-muted);font-size:13px;margin:0;">No data for this filter.</p>';
+}
+
+function renderProductTable(products){
+  const sorted = sortRows(products, state.productSort, PRODUCT_GETTERS);
+  document.getElementById('productTableCount').textContent = sorted.length + ' row' + (sorted.length===1?'':'s');
+  document.getElementById('productBody').innerHTML = sorted.length ? sorted.map(p => `
+    <tr>
+      <td><span class="rep-dot" style="background:${REP_COLOR[p.repKey]}"></span>${esc(p.rep)}</td>
+      <td>${esc(p.product_code)}</td>
+      <td class="num">${p.orders}</td>
+      <td class="num">${p.qty}</td>
+      <td class="num">${fmtMoney(p.revenue)}</td>
+    </tr>
+  `).join('') : '<tr class="empty-row"><td colspan="5">No products match the current filters.</td></tr>';
+}
+
+function render(){
+  const lines = filteredLines();
+  const accounts = aggregateAccounts(lines);
+  const orders = aggregateOrders(lines);
+  const products = aggregateProducts(lines, state.productLinesOnly);
+  document.getElementById('resultCount').textContent = lines.length + ' of ' + LINES.length + ' lines';
+  renderStats(lines);
+  renderRepChart(accounts);
+  renderAcctChart(accounts);
+  renderAccountTable(accounts);
+  renderOrderTable(orders);
+  renderProductChart(products);
+  renderProductTable(products);
+  updateSortArrows();
+}
+
+['fRep','fType','fWarehouse'].forEach(id => {
+  document.getElementById(id).addEventListener('change', e => {
+    state[id === 'fRep' ? 'rep' : id === 'fType' ? 'type' : 'warehouse'] = e.target.value;
+    render();
+  });
+});
+document.getElementById('fSearch').addEventListener('input', e => { state.search = e.target.value; render(); });
+
+document.getElementById('fDateRange').addEventListener('change', e => {
+  state.dateRange = e.target.value;
+  const isCustom = state.dateRange === 'custom';
+  document.getElementById('fCustomStart').style.display = isCustom ? '' : 'none';
+  document.getElementById('fCustomEnd').style.display = isCustom ? '' : 'none';
+  render();
+});
+document.getElementById('fCustomStart').addEventListener('change', e => { state.customStart = e.target.value; render(); });
+document.getElementById('fCustomEnd').addEventListener('change', e => { state.customEnd = e.target.value; render(); });
+document.getElementById('fProductOnly').addEventListener('change', e => { state.productLinesOnly = e.target.checked; render(); });
+
+function describeAge(iso){
+  if(!iso) return 'No Data Imported Yet';
+  const ms = Date.now() - new Date(iso).getTime();
+  const mins = Math.round(ms / 60000);
+  if(mins < 1) return 'Data As Of Just Now';
+  if(mins < 60) return `Data As Of ${mins} Min${mins===1?'':'s'} Ago`;
+  const hrs = Math.round(mins / 60);
+  if(hrs < 48) return `Data As Of ${hrs} Hour${hrs===1?'':'s'} Ago`;
+  const days = Math.round(hrs / 24);
+  return `Data As Of ${days} Day${days===1?'':'s'} Ago`;
+}
+
+async function loadAndRender(){
+  setStatusPill('Loading…', false);
+  try {
+    const { rows, importedAt } = await fetchLatestBatch();
+    LINES = rows;
+    rebuildFromLines();
+    render();
+    const stale = importedAt && (Date.now() - new Date(importedAt).getTime()) > 1000*60*60*24*14; // 14 days
+    setStatusPill(describeAge(importedAt), stale);
+  } catch(err){
+    setStatusPill('Could Not Load Data', true);
+    console.error(err);
+  }
+}
+
+/* ---------------- Import ----------------
+   Parses the Unleashed "Sales Enquiry" export client-side (SheetJS) and adds
+   it to the database as a new batch. Matches columns by their header text
+   (not fixed position), since Unleashed's export has shifted column layout
+   between exports before. Nothing is deleted — see the note on SUPA_KEY. */
+const HEADER_ALIASES = {
+  'customer': 'customer',
+  'customer code': 'customer_code',
+  'sales person': 'rep_name_raw',
+  'product code': 'product_code',
+  'order no': 'order_no',
+  'order no.': 'order_no',
+  'completed date': 'completed_date',
+  'warehouse': 'warehouse',
+  'customer type': 'customer_type',
+  'status': 'status',
+  'quantity': 'quantity',
+  'sub total': 'sub_total',
+};
+function normHeader(s){ return (s||'').toString().trim().toLowerCase().replace(/\.+$/,''); }
+
+function parseSheetRows(sheetRows){
+  // Find the header row: the first row that contains both "Customer" and "Order No".
+  let headerRowIdx = -1, colMap = {};
+  for(let i = 0; i < Math.min(sheetRows.length, 10); i++){
+    const row = sheetRows[i] || [];
+    const normed = row.map(normHeader);
+    if(normed.includes('customer') && normed.some(h => h === 'order no' || h === 'order no.')){
+      headerRowIdx = i;
+      row.forEach((cell, colIdx) => {
+        const key = HEADER_ALIASES[normHeader(cell)];
+        if(key) colMap[key] = colIdx;
+      });
+      break;
+    }
+  }
+  if(headerRowIdx === -1) throw new Error('Could not find the header row (expected columns like "Customer" and "Order No.") in this file.');
+
+  const out = [];
+  for(let i = headerRowIdx + 1; i < sheetRows.length; i++){
+    const row = sheetRows[i];
+    if(!row) continue;
+    const orderNo = row[colMap.order_no];
+    if(orderNo == null || orderNo === '') continue; // skips blank rows and the trailing "Totals" row
+    const repRaw = colMap.rep_name_raw != null ? row[colMap.rep_name_raw] : null;
+    let repName = null, repEmail = null;
+    if(repRaw){
+      const idx = String(repRaw).indexOf(':');
+      if(idx === -1) repName = String(repRaw).trim();
+      else { repName = String(repRaw).slice(0, idx).trim(); repEmail = String(repRaw).slice(idx+1).trim(); }
+    }
+    // cellDates:true on the read means date cells arrive as real Date objects;
+    // this only falls back to string/number parsing for an oddly-formatted cell.
+    const rawDate = colMap.completed_date != null ? row[colMap.completed_date] : null;
+    let completedDate = null;
+    if(rawDate instanceof Date && !isNaN(rawDate)) completedDate = rawDate.toISOString();
+    else if(typeof rawDate === 'number'){
+      const d = XLSX.SSF ? new Date((rawDate - 25569) * 86400 * 1000) : null; // Excel serial date epoch
+      if(d && !isNaN(d)) completedDate = d.toISOString();
+    } else if(rawDate){
+      const d = new Date(rawDate);
+      if(!isNaN(d)) completedDate = d.toISOString();
+    }
+
+    out.push({
+      customer: colMap.customer != null ? (row[colMap.customer] ?? null) : null,
+      customer_code: colMap.customer_code != null ? (row[colMap.customer_code] ?? null) : null,
+      rep_name: repName,
+      rep_email: repEmail,
+      product_code: colMap.product_code != null ? (row[colMap.product_code] ?? null) : null,
+      order_no: String(orderNo),
+      completed_date: completedDate,
+      warehouse: colMap.warehouse != null ? (row[colMap.warehouse] ?? null) : null,
+      customer_type: colMap.customer_type != null ? (row[colMap.customer_type] ?? null) : null,
+      status: colMap.status != null ? (row[colMap.status] ?? null) : null,
+      quantity: colMap.quantity != null ? Number(row[colMap.quantity]) || 0 : 0,
+      sub_total: colMap.sub_total != null ? Number(row[colMap.sub_total]) || 0 : 0,
+    });
+  }
+  return out;
+}
+
+async function insertBatch(rows, batchId){
+  const BATCH_SIZE = 400;
+  for(let i = 0; i < rows.length; i += BATCH_SIZE){
+    const chunk = rows.slice(i, i + BATCH_SIZE).map(r => ({ ...r, batch_id: batchId }));
+    const res = await fetch(`${SUPA_URL}/rest/v1/${TABLE}`, {
+      method: 'POST',
+      headers: { apikey: SUPA_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(chunk),
+    });
+    if(!res.ok){
+      const body = await res.text().catch(()=> '');
+      throw new Error(`Import failed on rows ${i+1}-${i+chunk.length} (${res.status}): ${body.slice(0,200)}`);
+    }
+  }
+}
+
+document.getElementById('importFile').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  e.target.value = ''; // allow re-selecting the same file next time
+  if(!file) return;
+
+  const importBtn = document.getElementById('importBtn');
+  try {
+    setImportMsg('Reading ' + file.name + '…', 'busy');
+    importBtn.disabled = true;
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const sheetRows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
+    const parsed = parseSheetRows(sheetRows);
+    if(!parsed.length) throw new Error('No data rows found in this file.');
+
+    if(!confirm(`Import ${parsed.length} line item${parsed.length===1?'':'s'} from "${file.name}"?\n\nThis adds a new snapshot — it will become what the dashboard shows, but nothing already in the database gets deleted.`)){
+      setImportMsg('', '');
+      return;
+    }
+
+    setImportMsg(`Uploading ${parsed.length} rows…`, 'busy');
+    const batchId = new Date().toISOString() + '-' + Math.random().toString(36).slice(2, 8);
+    await insertBatch(parsed, batchId);
+
+    setImportMsg(`Imported ${parsed.length} rows from "${file.name}".`, 'ok');
+    await loadAndRender();
+  } catch(err){
+    console.error(err);
+    setImportMsg(err.message || 'Import failed.', 'err');
+  } finally {
+    importBtn.disabled = false;
+  }
+});
+
+loadAndRender();
+</script>
+</body>
+</html>
