@@ -10,22 +10,21 @@
     --ink-primary:#1a2233;
     --ink-secondary:#5b6577;
     --ink-muted:#8a93a3;
-    --surface:#f5f6f8;
+    --surface:#f4f6fa;
     --surface-card:#ffffff;
     --border:#e4e7ec;
     --brand:#2a78d6;
     --brand-dark:#1c5cab;
     --good:#0ca30c;
     --radius:12px;
+    --sidebar-w:224px;
+    --sidebar-bg:#0e1830;
+    --sidebar-text:#93a1c0;
+    --sidebar-text-active:#ffffff;
+    --sidebar-active-bg:#1c3f73;
     /* categorical slots — fixed order, never reassigned by filters */
-    --s1:#2a78d6; /* blue */
-    --s2:#eb6834; /* orange */
-    --s3:#1baf7a; /* aqua */
-    --s4:#eda100; /* yellow */
-    --s5:#e87ba4; /* magenta */
-    --s6:#008300; /* green */
-    --s7:#4a3aa7; /* violet */
-    --s8:#e34948; /* red */
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
+    --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
   }
   *{box-sizing:border-box;}
   body{
@@ -34,10 +33,33 @@
     background:var(--surface);
     color:var(--ink-primary);
   }
-  .wrap{max-width:1240px;margin:0 auto;padding:28px 24px 60px;}
-  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap;}
-  h1{font-size:22px;margin:0 0 4px;letter-spacing:-0.01em;}
-  .subtitle{color:var(--ink-secondary);font-size:14px;margin:0;}
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    position:fixed; top:0; left:0; bottom:0; width:var(--sidebar-w);
+    background:var(--sidebar-bg); display:flex; flex-direction:column;
+    padding:20px 12px; z-index:20;
+  }
+  .sidebar-logo{color:#fff; display:flex; align-items:center; gap:8px; padding:4px 10px 22px; font-weight:700; font-size:15px;}
+  .sidebar-logo svg{flex-shrink:0;}
+  .nav-group{display:flex; flex-direction:column; gap:2px;}
+  .nav-item{
+    display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px;
+    color:var(--sidebar-text); font-size:13.5px; font-weight:600; cursor:pointer; border:none; background:none;
+    text-align:left; width:100%; font-family:inherit;
+  }
+  .nav-item svg{flex-shrink:0; opacity:.85;}
+  .nav-item:hover{color:#fff; background:rgba(255,255,255,.06);}
+  .nav-item.active{color:var(--sidebar-text-active); background:var(--sidebar-active-bg);}
+  .nav-divider{border-top:1px solid rgba(255,255,255,.09); margin:14px 4px;}
+  .nav-footer{margin-top:auto; display:flex; flex-direction:column; gap:2px;}
+
+  .app{margin-left:var(--sidebar-w);}
+  .wrap{max-width:1280px;margin:0 auto;padding:24px 28px 60px;}
+
+  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
+  h1{font-size:21px;margin:0 0 4px;letter-spacing:-0.01em;}
+  .subtitle{color:var(--ink-secondary);font-size:13.5px;margin:0;}
   .status-pill{
     display:inline-flex;align-items:center;gap:6px;flex-shrink:0;
     background:#eef6ee;color:#1a6b2f;border:1px solid #cfe8d2;
@@ -46,28 +68,26 @@
   .status-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--good);}
   .status-pill.stale{background:#fff4e0;color:#8a5b00;border-color:#f0d59a;}
   .status-pill.stale .dot{background:#c98a05;}
-  .top-actions{display:flex;align-items:center;gap:10px;flex-shrink:0;}
-  .import-btn{
-    appearance:none;border:1px solid var(--brand);background:var(--brand);color:#fff;
-    padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;
+  .top-actions{display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;}
+  .btn{
+    appearance:none;border:1px solid var(--border);background:#fff;color:var(--ink-primary);
+    padding:7px 13px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
   }
-  .import-btn:hover{background:var(--brand-dark);}
-  .import-btn:disabled{opacity:.6;cursor:default;}
-  .import-msg{font-size:12.5px;margin:-14px 0 14px;min-height:1em;}
+  .btn:hover{border-color:#c7ceda;}
+  .btn-primary{border-color:var(--brand);background:var(--brand);color:#fff;}
+  .btn-primary:hover{background:var(--brand-dark);}
+  .btn:disabled{opacity:.6;cursor:default;}
+  .import-msg{font-size:12.5px;margin:-12px 0 14px;min-height:1em;}
   .import-msg.ok{color:var(--good);}
   .import-msg.err{color:#c0392b;}
   .import-msg.busy{color:var(--ink-secondary);}
 
-  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px;}
-  .stat-card{background:var(--surface-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
-  .stat-label{font-size:12.5px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
-  .stat-value{font-size:26px;font-weight:700;letter-spacing:-0.02em;}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px;}
+  .stat-card{background:var(--surface-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;display:flex;gap:12px;align-items:flex-start;}
+  .stat-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .stat-label{font-size:12px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;}
+  .stat-value{font-size:22px;font-weight:700;letter-spacing:-0.02em;}
   .stat-sub{font-size:12.5px;color:var(--ink-secondary);margin-top:4px;}
-
-  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:18px;}
-  .tab-btn{appearance:none;border:none;background:none;cursor:pointer;padding:10px 16px;font-size:14px;font-weight:600;color:var(--ink-muted);border-bottom:2px solid transparent;margin-bottom:-1px;}
-  .tab-btn.active{color:var(--brand);border-bottom-color:var(--brand);}
-  .tab-btn:hover:not(.active){color:var(--ink-secondary);}
 
   .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px;}
   .toolbar select, .toolbar input[type="text"]{
@@ -82,9 +102,11 @@
   .chk-hint{color:var(--ink-muted);font-size:12px;}
 
   .card{background:var(--surface-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
-  .card-head{padding:16px 18px 4px;display:flex;align-items:baseline;justify-content:space-between;}
+  .card-head{padding:16px 18px 4px;display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
   .card-head h2{font-size:15px;margin:0;}
-  .card-head .count{font-size:12.5px;color:var(--ink-muted);}
+  .card-head .count{font-size:12.5px;color:var(--ink-muted);white-space:nowrap;}
+  .card-link{font-size:12.5px;font-weight:600;color:var(--brand);text-decoration:none;cursor:pointer;white-space:nowrap;}
+  .card-link:hover{text-decoration:underline;}
 
   .table-scroll{max-height:560px;overflow:auto;}
   table{width:100%;border-collapse:collapse;font-size:13.5px;}
@@ -93,15 +115,20 @@
   tbody td{padding:11px 18px;border-bottom:1px solid var(--border);white-space:nowrap;}
   tbody tr:last-child td{border-bottom:none;}
   tbody tr:hover{background:#fafbfc;}
+  tbody tr.clickable{cursor:pointer;}
+  tbody tr.clickable:hover{background:#eef4fc;}
+  tbody tr.row-selected{background:#e8f1fc;}
   .rep-name{font-weight:600;}
   .rep-email{color:var(--ink-muted);font-size:12px;display:block;font-weight:400;}
   .rep-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;flex-shrink:0;vertical-align:middle;}
   .badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:100px;background:#e8f6ee;color:var(--good);}
   .badge .idot{width:5px;height:5px;border-radius:50%;background:currentColor;}
   .empty-row td{color:var(--ink-muted);text-align:center;padding:30px 18px;}
+  .row-chevron{color:var(--ink-muted);float:right;}
 
   .two-col{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:18px;align-items:start;}
-  @media (max-width: 900px){ .stats{grid-template-columns:repeat(2,1fr);} .two-col{grid-template-columns:1fr;} }
+  @media (max-width: 1000px){ .stats{grid-template-columns:repeat(2,1fr);} .two-col{grid-template-columns:1fr;} .dash-layout{grid-template-columns:1fr !important;} }
+  @media (max-width: 820px){ .sidebar{display:none;} .app{margin-left:0;} }
 
   .chart-card{padding:18px;}
   .chart-scroll{max-height:400px;overflow-y:auto;}
@@ -121,137 +148,296 @@
   th.sortable:hover{color:var(--ink-secondary);}
   th.sortable .arrow{opacity:.4;margin-left:3px;}
   th.sortable.active .arrow{opacity:1;color:var(--brand);}
+
+  /* ---------- Dashboard page layout ---------- */
+  .dash-layout{display:grid;grid-template-columns:230px 1fr;gap:16px;align-items:start;margin-bottom:16px;}
+  .bdm-panel{background:var(--surface-card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+  .bdm-panel-title{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-muted);font-weight:700;margin:0 0 10px;}
+  .bdm-search{width:100%;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px;margin-bottom:10px;}
+  .bdm-list{display:flex;flex-direction:column;gap:2px;max-height:420px;overflow-y:auto;}
+  .bdm-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--ink-secondary);}
+  .bdm-item:hover{background:#f2f4f8;}
+  .bdm-item.active{background:#e8f1fc;color:var(--brand-dark);}
+  .dash-main-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
+  .dash-main-head h2{font-size:16px;margin:0;}
+  .dash-main-head h2 b{color:var(--brand-dark);}
+  .dash-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  @media (max-width:700px){ .dash-stats{grid-template-columns:1fr;} }
+  .acct-selected-label{font-size:12px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin:0 0 2px;}
+  .acct-selected-name{font-size:17px;font-weight:700;color:var(--brand-dark);margin:0 0 14px;}
+
+  .filter-overlay{position:fixed;inset:0;background:rgba(15,20,35,.35);z-index:40;display:none;align-items:flex-start;justify-content:flex-end;}
+  .filter-overlay.open{display:flex;}
+  .filter-panel{background:#fff;width:320px;height:100%;padding:22px;box-shadow:-8px 0 24px rgba(0,0,0,.12);display:flex;flex-direction:column;gap:14px;overflow-y:auto;}
+  .filter-panel h3{margin:0 0 4px;font-size:16px;}
+  .filter-field label{display:block;font-size:12px;font-weight:700;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;}
+  .filter-field select, .filter-field input[type="text"]{width:100%;}
+  .filter-close{margin-left:auto;border:none;background:none;font-size:20px;line-height:1;cursor:pointer;color:var(--ink-muted);}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <div class="top">
-    <div>
-      <h1>Sales Rep Dashboard</h1>
-      <p class="subtitle">Sales Rep Performance — Per Account (Customer) &amp; Per Sales Order · Source: Unleashed Sales</p>
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
+    Sales Rep Dashboard
+  </div>
+  <div class="nav-group">
+    <button class="nav-item active" data-page="dashboard" onclick="setPage('dashboard')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-item" data-page="accounts" onclick="setPage('accounts')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
+      Accounts
+    </button>
+    <button class="nav-item" data-page="orders" onclick="setPage('orders')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h2l2.4 12.2a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.6L21 7H6"/></svg>
+      Orders
+    </button>
+    <button class="nav-item" data-page="products" onclick="setPage('products')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+      Products / SKUs
+    </button>
+    <button class="nav-item" data-page="reports" onclick="setPage('reports')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9M11 19V4M18 19v-7"/></svg>
+      Reports
+    </button>
+  </div>
+  <div class="nav-footer">
+    <div class="nav-divider"></div>
+    <button class="nav-item" onclick="openFilters()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16M7 12h10M10 19h4"/></svg>
+      Filters
+    </button>
+  </div>
+</div>
+
+<div class="app">
+  <div class="wrap">
+
+    <div class="top">
+      <div>
+        <h1 id="pageTitle">Sales Dashboard</h1>
+        <p class="subtitle" id="pageSubtitle">Track accounts, orders and top purchased SKUs</p>
+      </div>
+      <div class="top-actions">
+        <span class="status-pill" id="dataStatusPill"><span class="dot"></span>Loading…</span>
+        <button class="btn" id="dateRangeBtn" onclick="openFilters()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
+          <span id="dateRangeBtnLabel">All Time</span>
+        </button>
+        <button class="btn btn-primary" id="importBtn" onclick="document.getElementById('importFile').click()">Import Data</button>
+        <input type="file" id="importFile" accept=".xlsx,.xls" style="display:none" />
+      </div>
     </div>
-    <div class="top-actions">
-      <span class="status-pill" id="dataStatusPill"><span class="dot"></span>Loading…</span>
-      <button class="import-btn" id="importBtn" onclick="document.getElementById('importFile').click()">Import Data</button>
-      <input type="file" id="importFile" accept=".xlsx,.xls" style="display:none" />
+    <p class="import-msg" id="importMsg"></p>
+
+    <!-- ============ DASHBOARD PAGE ============ -->
+    <div id="page-dashboard">
+      <div class="dash-layout">
+        <div class="bdm-panel">
+          <p class="bdm-panel-title">BDM</p>
+          <input type="text" class="bdm-search" id="bdmSearch" placeholder="Search BDM" />
+          <div class="bdm-list" id="bdmList"></div>
+        </div>
+        <div>
+          <div class="dash-main-head">
+            <h2 id="dashAccountsHeading">Accounts owned by <b>—</b></h2>
+          </div>
+          <div class="dash-stats" id="dashStatTiles" style="margin-bottom:16px;"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:18px;">
+        <div class="card-head"><h2 id="dashAcctTableHeading">Accounts</h2><span class="count" id="dashAcctCount"></span></div>
+        <div class="table-scroll" style="max-height:320px;">
+        <table>
+          <thead><tr>
+            <th>Account Name</th><th>Account Code</th><th class="num">Total Purchase (₹)</th><th class="num">Orders</th><th>Last Order Date</th><th></th>
+          </tr></thead>
+          <tbody id="dashAcctBody"></tbody>
+        </table>
+        </div>
+      </div>
+
+      <p class="acct-selected-label">Account Selected</p>
+      <p class="acct-selected-name" id="dashSelectedAcctName">—</p>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head"><h2>1. Details of Each Order</h2><a class="card-link" onclick="goToPage('orders', true)">View all orders →</a></div>
+          <div class="table-scroll" style="max-height:340px;">
+          <table>
+            <thead><tr><th>Order Date</th><th>Order No.</th><th class="num">Total Amount</th><th class="num">Items</th><th>Status</th></tr></thead>
+            <tbody id="dashOrdersBody"></tbody>
+          </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>2. Top Purchased SKUs</h2><a class="card-link" onclick="goToPage('products', true)">View all SKUs →</a></div>
+          <div class="chart-card"><div class="chart-scroll" id="dashSkuChart"></div></div>
+        </div>
+      </div>
     </div>
-  </div>
-  <p class="import-msg" id="importMsg"></p>
 
-  <div class="stats" id="statTiles"></div>
-
-  <div class="tabs">
-    <button class="tab-btn active" onclick="setTab('account')" id="tabBtnAccount">By Account</button>
-    <button class="tab-btn" onclick="setTab('order')" id="tabBtnOrder">By Sales Order</button>
-    <button class="tab-btn" onclick="setTab('product')" id="tabBtnProduct">By Product</button>
-  </div>
-
-  <div class="toolbar">
-    <select id="fRep"></select>
-    <select id="fType"></select>
-    <select id="fWarehouse"></select>
-    <select id="fDateRange">
-      <option value="all">All Time</option>
-      <option value="this_week">This Week</option>
-      <option value="this_month">This Month</option>
-      <option value="last_month">Last Month</option>
-      <option value="custom">Custom Range…</option>
-    </select>
-    <input type="date" id="fCustomStart" class="date-input" style="display:none" />
-    <input type="date" id="fCustomEnd" class="date-input" style="display:none" />
-    <input type="text" id="fSearch" class="grow" placeholder="Search customer, order no. or product code…" />
-    <span class="result-count" id="resultCount"></span>
-  </div>
-  <div class="toolbar" style="margin-top:-8px;">
-    <label class="chk"><input type="checkbox" id="fProductOnly" /> Product Lines Only <span class="chk-hint">(excludes delivery / install / credit lines from By Product)</span></label>
-  </div>
-
-  <div id="tab-account">
-    <div class="two-col">
-      <div class="card">
-        <div class="card-head"><h2>Revenue by Sales Rep</h2><span class="count" id="repChartCount"></span></div>
-        <div class="chart-card"><div class="chart-scroll" id="repChart"></div></div>
+    <!-- ============ ACCOUNTS PAGE ============ -->
+    <div id="page-accounts" style="display:none">
+      <div class="stats" id="acctStatTiles"></div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head"><h2>Revenue by Sales Rep</h2><span class="count" id="repChartCount"></span></div>
+          <div class="chart-card"><div class="chart-scroll" id="repChart"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Top Accounts</h2><span class="count" id="acctChartCount">by revenue</span></div>
+          <div class="chart-card"><div id="acctChart"></div></div>
+        </div>
       </div>
       <div class="card">
-        <div class="card-head"><h2>Top Accounts</h2><span class="count" id="acctChartCount">by revenue</span></div>
-        <div class="chart-card"><div id="acctChart"></div></div>
+        <div class="card-head"><h2>All Accounts</h2><span class="count" id="acctTableCount"></span></div>
+        <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th class="sortable" data-sort="rep" onclick="sortAccount('rep')">Sales Rep <span class="arrow">↕</span></th>
+              <th class="sortable" data-sort="customer" onclick="sortAccount('customer')">Customer <span class="arrow">↕</span></th>
+              <th>Customer Type</th>
+              <th class="num sortable" data-sort="orders" onclick="sortAccount('orders')">Orders <span class="arrow">↕</span></th>
+              <th class="num sortable" data-sort="qty" onclick="sortAccount('qty')">Total Qty <span class="arrow">↕</span></th>
+              <th class="num sortable active" data-sort="revenue" onclick="sortAccount('revenue')">Total Revenue <span class="arrow">↕</span></th>
+              <th class="sortable" data-sort="last" onclick="sortAccount('last')">Last Order Date <span class="arrow">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="acctBody"></tbody>
+        </table>
+        </div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-head"><h2>Sales Rep — Per Account (Customer)</h2><span class="count" id="acctTableCount"></span></div>
-      <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th class="sortable" data-sort="rep" onclick="sortAccount('rep')">Sales Rep <span class="arrow">↕</span></th>
-            <th class="sortable" data-sort="customer" onclick="sortAccount('customer')">Customer <span class="arrow">↕</span></th>
-            <th>Customer Type</th>
-            <th class="num sortable" data-sort="orders" onclick="sortAccount('orders')">Orders <span class="arrow">↕</span></th>
-            <th class="num sortable" data-sort="qty" onclick="sortAccount('qty')">Total Qty <span class="arrow">↕</span></th>
-            <th class="num sortable active" data-sort="revenue" onclick="sortAccount('revenue')">Total Revenue <span class="arrow">↕</span></th>
-            <th class="sortable" data-sort="last" onclick="sortAccount('last')">Last Order Date <span class="arrow">↕</span></th>
-          </tr>
-        </thead>
-        <tbody id="acctBody"></tbody>
-      </table>
+    <!-- ============ ORDERS PAGE ============ -->
+    <div id="page-orders" style="display:none">
+      <div class="card">
+        <div class="card-head"><h2>All Sales Orders</h2><span class="count" id="orderTableCount"></span></div>
+        <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th class="sortable" data-sort="order" onclick="sortOrder('order')">Order No. <span class="arrow">↕</span></th>
+              <th class="sortable" data-sort="customer" onclick="sortOrder('customer')">Customer <span class="arrow">↕</span></th>
+              <th class="sortable" data-sort="rep" onclick="sortOrder('rep')">Sales Rep <span class="arrow">↕</span></th>
+              <th class="sortable active" data-sort="date" onclick="sortOrder('date')">Completed Date <span class="arrow">↕</span></th>
+              <th>Products</th>
+              <th>Warehouse</th>
+              <th>Customer Type</th>
+              <th>Status</th>
+              <th class="num sortable" data-sort="qty" onclick="sortOrder('qty')">Qty <span class="arrow">↕</span></th>
+              <th class="num sortable" data-sort="revenue" onclick="sortOrder('revenue')">Sub Total <span class="arrow">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="orderBody"></tbody>
+        </table>
+        </div>
+      </div>
+      <p class="note">Note: <b>Orders</b> rolls up every line on the order (product lines + delivery/credit/adjustment lines), so the total shown matches the order's real value in Unleashed — not just one product line.</p>
+    </div>
+
+    <!-- ============ PRODUCTS PAGE ============ -->
+    <div id="page-products" style="display:none">
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-head"><h2>Top Products<span id="productChartRepLabel"></span></h2><span class="count" id="productChartCount"></span></div>
+        <div class="chart-card"><div class="chart-scroll" id="productChart"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>All Products / SKUs</h2><span class="count" id="productTableCount"></span></div>
+        <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th class="sortable" data-sort="rep" onclick="sortProduct('rep')">Sales Rep <span class="arrow">↕</span></th>
+              <th class="sortable" data-sort="product" onclick="sortProduct('product')">SKU <span class="arrow">↕</span></th>
+              <th>SKU Name</th>
+              <th class="num sortable" data-sort="orders" onclick="sortProduct('orders')">Orders <span class="arrow">↕</span></th>
+              <th class="num sortable active" data-sort="qty" onclick="sortProduct('qty')">Total Qty <span class="arrow">↕</span></th>
+              <th class="num sortable" data-sort="revenue" onclick="sortProduct('revenue')">Total Revenue <span class="arrow">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="productBody"></tbody>
+        </table>
+        </div>
+      </div>
+      <p class="note">Note: a few SKU values in the export are delivery, install-service or credit/adjustment lines rather than physical products (e.g. <b>MSS-Delivery</b>, <b>DOOR LOCK INSTALLATION++...</b>). Tick <b>Product Lines Only</b> in Filters to hide those. "SKU Name" is shown where we have it in the product catalog — not every code (especially spare parts) has a matching name yet.</p>
+    </div>
+
+    <!-- ============ REPORTS PAGE ============ -->
+    <div id="page-reports" style="display:none">
+      <div class="stats" id="reportStatTiles"></div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head"><h2>Revenue by Sales Rep</h2><span class="count" id="repChart2Count"></span></div>
+          <div class="chart-card"><div class="chart-scroll" id="repChart2"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Top Accounts (All Reps)</h2><span class="count" id="acctChart2Count">by revenue</span></div>
+          <div class="chart-card"><div id="acctChart2"></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Top Products (All Reps)</h2><span class="count" id="productChart2Count"></span></div>
+        <div class="chart-card"><div class="chart-scroll" id="productChart2"></div></div>
       </div>
     </div>
+
   </div>
+</div>
 
-  <div id="tab-order" style="display:none">
-    <div class="card">
-      <div class="card-head"><h2>Sales Rep — Per Sales Order</h2><span class="count" id="orderTableCount"></span></div>
-      <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th class="sortable" data-sort="order" onclick="sortOrder('order')">Order No. <span class="arrow">↕</span></th>
-            <th class="sortable" data-sort="customer" onclick="sortOrder('customer')">Customer <span class="arrow">↕</span></th>
-            <th class="sortable" data-sort="rep" onclick="sortOrder('rep')">Sales Rep <span class="arrow">↕</span></th>
-            <th class="sortable active" data-sort="date" onclick="sortOrder('date')">Completed Date <span class="arrow">↕</span></th>
-            <th>Products</th>
-            <th>Warehouse</th>
-            <th>Customer Type</th>
-            <th>Status</th>
-            <th class="num sortable" data-sort="qty" onclick="sortOrder('qty')">Qty <span class="arrow">↕</span></th>
-            <th class="num sortable" data-sort="revenue" onclick="sortOrder('revenue')">Sub Total <span class="arrow">↕</span></th>
-          </tr>
-        </thead>
-        <tbody id="orderBody"></tbody>
-      </table>
+<!-- ============ FILTERS PANEL ============ -->
+<div class="filter-overlay" id="filterOverlay" onclick="if(event.target===this) closeFilters()">
+  <div class="filter-panel">
+    <div style="display:flex;align-items:center;">
+      <h3>Filters</h3>
+      <button class="filter-close" onclick="closeFilters()">&times;</button>
+    </div>
+    <div class="filter-field">
+      <label>Sales Rep</label>
+      <select id="fRep"></select>
+      <span class="chk-hint">Filters Accounts / Orders / Products / Reports. The Dashboard page has its own BDM picker.</span>
+    </div>
+    <div class="filter-field">
+      <label>Customer Type</label>
+      <select id="fType"></select>
+    </div>
+    <div class="filter-field">
+      <label>Warehouse</label>
+      <select id="fWarehouse"></select>
+    </div>
+    <div class="filter-field">
+      <label>Date Range</label>
+      <select id="fDateRange">
+        <option value="all">All Time</option>
+        <option value="this_week">This Week</option>
+        <option value="this_month">This Month</option>
+        <option value="last_month">Last Month</option>
+        <option value="custom">Custom Range…</option>
+      </select>
+    </div>
+    <div class="filter-field" id="fCustomWrap" style="display:none">
+      <label>Custom Range</label>
+      <div style="display:flex;gap:8px;">
+        <input type="date" id="fCustomStart" class="date-input" />
+        <input type="date" id="fCustomEnd" class="date-input" />
       </div>
     </div>
-    <p class="note">Note: <b>Per Sales Order</b> rolls up every line on the order (product lines + delivery/credit/adjustment lines), so the total shown matches the order's real value in Unleashed — not just one product line.</p>
-  </div>
-
-  <div id="tab-product" style="display:none">
-    <div class="card" style="margin-bottom:16px;">
-      <div class="card-head"><h2>Top Products<span id="productChartRepLabel"></span></h2><span class="count" id="productChartCount"></span></div>
-      <div class="chart-card"><div class="chart-scroll" id="productChart"></div></div>
+    <div class="filter-field">
+      <label>Search</label>
+      <input type="text" id="fSearch" placeholder="Customer, order no. or product code…" />
     </div>
-
-    <div class="card">
-      <div class="card-head"><h2>Sales Rep — Top Products</h2><span class="count" id="productTableCount"></span></div>
-      <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th class="sortable" data-sort="rep" onclick="sortProduct('rep')">Sales Rep <span class="arrow">↕</span></th>
-            <th class="sortable" data-sort="product" onclick="sortProduct('product')">Product Code <span class="arrow">↕</span></th>
-            <th class="num sortable" data-sort="orders" onclick="sortProduct('orders')">Orders <span class="arrow">↕</span></th>
-            <th class="num sortable active" data-sort="qty" onclick="sortProduct('qty')">Total Qty <span class="arrow">↕</span></th>
-            <th class="num sortable" data-sort="revenue" onclick="sortProduct('revenue')">Total Revenue <span class="arrow">↕</span></th>
-          </tr>
-        </thead>
-        <tbody id="productBody"></tbody>
-      </table>
-      </div>
+    <div class="filter-field">
+      <label class="chk"><input type="checkbox" id="fProductOnly" /> Product Lines Only</label>
+      <span class="chk-hint">(excludes delivery / install / credit lines from Products)</span>
     </div>
-    <p class="note">Note: a few "Product Code" values in the export are delivery, install-service or credit/adjustment lines rather than physical products (e.g. <b>MSS-Delivery</b>, <b>DOOR LOCK INSTALLATION++...</b>). Tick <b>Product Lines Only</b> above to hide those from this tab — order totals elsewhere are unaffected either way. Filter by Sales Rep to see one rep's top sellers.</p>
+    <button class="btn btn-primary" onclick="closeFilters()" style="margin-top:8px;justify-content:center;">Apply</button>
   </div>
-
 </div>
 
 <script>
@@ -304,6 +490,17 @@ function setImportMsg(text, kind){
 const PALETTE = ['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#4a3aa7','#e34948'];
 const NO_REP = '__none__';
 
+// Product Code -> {brand, sub} catalog lookup, for a friendlier "SKU Name" where we
+// have it. Built from DDL's product list; spare-part / RET- codes usually aren't
+// in this catalog and fall back to just showing the raw code.
+const PRODUCT_LOOKUP = {"7300-5HB-Black":{"brand":"Philips-Digital Door Locks","sub":"Handle"},"7300-5HB-Copper":{"brand":"Philips-Digital Door Locks","sub":"Handle"},"7300-5HWS-BLACK":{"brand":"Philips-Digital Door Locks","sub":"Handle"},"7300-5HWS-COPPER":{"brand":"Philips-Digital Door Locks","sub":"Handle"},"9300-5HBGS":{"brand":"Philips-Digital Door Locks","sub":"Push Pull"},"Alpha-VP-5HWS-Black":{"brand":"Philips-Digital Door Locks","sub":"Push Pull"},"Alpha-VP-5HWS-Copper":{"brand":"Philips-Digital Door Locks","sub":"Push Pull"},"DDA270X-2TXS3":{"brand":"Philips-Digital Door Locks","sub":"Door Bell"},"DDL101-3HB-BLACK":{"brand":"Philips-Digital Door Locks","sub":"Deadbolt"},"DDL210S-12H":{"brand":"Philips-Digital Door Locks","sub":"Deadbolt"},"DDL210S-13H-BLACK":{"brand":"Philips-Digital Door Locks","sub":"Deadbolt"},"DDL210S-13H-NICKEL":{"brand":"Philips-Digital Door Locks","sub":"Deadbolt"},"DDL210S-1H-BLACK":{"brand":"Philips-Digital Door Locks","sub":"Deadbolt"},"DDL210S-1H-NICKEL":{"brand":"Philips-Digital Door Locks","sub":"Deadbolt"},"DDL220X-1HW-BLACK":{"brand":"Philips-Digital Door Locks","sub":"Deadbolt"},"DDL230X-1HWP-BLACK":{"brand":"Philips-Digital Door Locks","sub":"Deadbolt"},"DDL250X-14HWC":{"brand":"Philips-Digital Door Locks","sub":"Deadbolt"},"DDL303-VP-5HWS-BLACK":{"brand":"Philips-Digital Door Locks","sub":"Push Pull"},"DDL303-VP-5HWS-COPPER":{"brand":"Philips-Digital Door Locks","sub":"Push Pull"},"DDL502-13HBS-BLACK":{"brand":"Philips-Digital Door Locks","sub":"Deadbolt"},"DDL505-5HBS":{"brand":"Philips-Digital Door Locks","sub":"Deadbolt"},"DDL603E-5HWS":{"brand":"Philips-Digital Door Locks","sub":"Handle"},"DDL608-5HWS-BLACK":{"brand":"Philips-Digital Door Locks","sub":"Handle"},"DDL608-5HWS-SILVER":{"brand":"Philips-Digital Door Locks","sub":"Handle"},"DDL610-5HBS":{"brand":"Philips-Digital Door Locks","sub":"Handle"},"DDL611-18HBS":{"brand":"Philips-Digital Door Locks","sub":"Handle"},"DDL611S-5HBS":{"brand":"Philips-Digital Door Locks","sub":"Handle"},"DDL615-5HBS":{"brand":"Philips-Digital Door Locks","sub":"Handle"},"DDL702-1HWS-Black":{"brand":"Philips-Digital Door Locks","sub":"Push Pull"},"DDL702-1HWS-Copper":{"brand":"Philips-Digital Door Locks","sub":"Push Pull"},"DDL702-8HWS-Black":{"brand":"Philips-Digital Door Locks","sub":"Push Pull"},"DDL702-8HWS-Copper":{"brand":"Philips-Digital Door Locks","sub":"Push Pull"},"DDL702-FVP-7HWS":{"brand":"Philips-Digital Door Locks","sub":"Push Pull"},"DDL709-FVP-7HWS-BLACK":{"brand":"Philips-Digital Door Locks","sub":"Push Pull"},"DDL709-FVP-7HWS-COPPER":{"brand":"Philips-Digital Door Locks","sub":"Push Pull"},"DDL720-5HWS":{"brand":"Philips-Digital Door Locks","sub":"Push Pull"},"DDL720-MVP-17HWS":{"brand":"Philips-Digital Door Locks","sub":"Push Pull"},"DDL801-5HBS-Grey":{"brand":"Philips-Digital Door Locks","sub":"Push Pull"},"DDL902-MFVP-11HWS-BLACK":{"brand":"Philips-Digital Door Locks","sub":"Push Pull"},"DDL902-MFVP-11HWS-GOLD":{"brand":"Philips-Digital Door Locks","sub":"Push Pull"},"DDL-P6006S/AU":{"brand":"DDL-Digital Door Locks","sub":"Push Pull"},"DDL-R7000B/AU":{"brand":"DDL-Digital Door Locks","sub":"Rim"},"DDL-SH5000B/AU":{"brand":"DDL-Digital Door Locks","sub":"Handle"},"SBX001-1M4":{"brand":"Philips Safes","sub":"0000 Series"},"SBX102-2C0-GREY":{"brand":"Philips Safes","sub":"1000 Series"},"SBX102-2C0-WHITE":{"brand":"Philips Safes","sub":"1000 Series"},"SBX-132-2D0-Grey":{"brand":"Philips Safes","sub":"1000 Series"},"SBX133-2D0-Grey":{"brand":"Philips Safes","sub":"1000 Series"},"SBX202-5C0 - Gold":{"brand":"Philips Safes","sub":"2000 Series"},"SBX202-5C0 - Grey":{"brand":"Philips Safes","sub":"2000 Series"},"SBX202-6C0 - Gold":{"brand":"Philips Safes","sub":"2000 Series"},"SBX202-6C0 - Grey":{"brand":"Philips Safes","sub":"2000 Series"},"SBX202-7C0 - Gold":{"brand":"Philips Safes","sub":"2000 Series"},"SBX202-7C0 - Grey":{"brand":"Philips Safes","sub":"2000 Series"},"SBX300-5CC-White":{"brand":"Philips Safes","sub":"3000 Series"},"SBX602-6CU-Gold":{"brand":"Philips Safes","sub":"6000 Series"},"SBX602-8CU - Gold":{"brand":"Philips Safes","sub":"6000 Series"},"SBX701-6B0-GREY":{"brand":"Philips Safes","sub":"7000 Series"},"SBX702-CBX-GREY":{"brand":"Philips Safes","sub":"7000 Series"},"SHP-A30FCDS/EN":{"brand":"Samsung-Digital Door Locks","sub":"Deadbolt"},"SHP-DH537MU/AU":{"brand":"Samsung-Digital Door Locks","sub":"Handle"},"SHP-DH538MU/AU":{"brand":"Samsung-Digital Door Locks","sub":"Handle"},"SHP-DP609":{"brand":"Samsung-Digital Door Locks","sub":"Push Pull"},"SHP-DP609AS/ZE":{"brand":"Zigbang-Digital Door Locks","sub":"Push Pull"},"SHP-DR708AU/VK":{"brand":"Samsung-Digital Door Locks","sub":"Push Pull"},"SHP-DS705MK/EN":{"brand":"Samsung-Digital Door Locks","sub":"Rim"},"SHP-H60FBXS/ZE":{"brand":"Zigbang-Digital Door Locks","sub":"Handle"},"SHP-H60RBXS/ZE":{"brand":"Zigbang-Digital Door Locks","sub":"Handle"},"SHP-P52":{"brand":"Zigbang-Digital Door Locks","sub":"Push Pull"},"SHP-R80FCLP/EN":{"brand":"Samsung-Digital Door Locks","sub":"Push Pull"},"SHP-R80FCLP/ZE":{"brand":"Zigbang-Digital Door Locks","sub":"Push Pull"},"SHS-3321XMK/EN":{"brand":"Samsung-Digital Door Locks","sub":"Deadbolt"},"SHS-P717LMK/EN":{"brand":"Samsung-Digital Door Locks","sub":"Push Pull"},"SHS-P718LMK/EN":{"brand":"Samsung-Digital Door Locks","sub":"Push Pull"},"Valis-6BU-Gold":{"brand":"Philips Safes","sub":"Valis Series"},"Valis-Pro-Grey":{"brand":"Philips Safes","sub":"Valis Series"},"ZD-P73FNLS/EN":{"brand":"Zigbang-Digital Door Locks","sub":"Push Pull"},"ZD-R70-CNRN/EN-GREEN":{"brand":"Zigbang-Digital Door Locks","sub":"Handle"},"ZD-R70-CNRS/EN-BLACK":{"brand":"Zigbang-Digital Door Locks","sub":"Handle"}};
+const BRAND_SHORT = {'Philips-Digital Door Locks':'Philips Locks','Philips Safes':'Philips Safes','Samsung-Digital Door Locks':'Samsung Locks','Zigbang-Digital Door Locks':'Zigbang Locks','DDL-Digital Door Locks':'DDL Locks'};
+function skuName(code){
+  const p = PRODUCT_LOOKUP[code];
+  if(!p) return '—';
+  return (BRAND_SHORT[p.brand] || p.brand) + ' · ' + p.sub;
+}
+
 function repKey(l){ return l.rep_name || NO_REP; }
 function repLabel(l){ return l.rep_name || 'No Rep Assigned'; }
 function fmtMoney(n){ return '$' + (n||0).toLocaleString('en-AU', {minimumFractionDigits:2, maximumFractionDigits:2}); }
@@ -327,6 +524,14 @@ function isNonProductCode(code){
   if(code === 'MSS-Delivery') return true;
   if(code === '\\C') return true;
   return false;
+}
+
+// Short "account code" derived from the customer name, since Unleashed's
+// "Customer Code" field is often just a truncated copy of the name anyway —
+// shown as a compact chip similar to the design's "ACC1001" style codes.
+function acctCode(customerCode, customer){
+  const src = (customerCode || customer || '').toString();
+  return src.length > 14 ? src.slice(0,14) + '…' : src;
 }
 
 // Fixed color assignment — recomputed each time data loads, from the FULL
@@ -356,9 +561,19 @@ function rebuildFromLines(){
   populateSelect(document.getElementById('fType'), types.map(t => ({key:t, label:t})), 'All Customer Types');
   const whs = [...new Set(LINES.map(l => l.warehouse || 'Unspecified'))].sort();
   populateSelect(document.getElementById('fWarehouse'), whs.map(w => ({key:w, label:w})), 'All Warehouses');
+
+  // Default the Dashboard page's BDM selection (independent from the global
+  // "Sales Rep" filter used by the other pages) to the top rep by revenue, so
+  // there's always something meaningful to show on first load.
+  if((!state.dashboardRep || !ALL_REP_KEYS.includes(state.dashboardRep)) && ALL_REP_KEYS.length){
+    const byRev = new Map();
+    LINES.forEach(l => byRev.set(repKey(l), (byRev.get(repKey(l))||0) + (l.sub_total||0)));
+    state.dashboardRep = [...ALL_REP_KEYS].sort((a,b) => (byRev.get(b)||0) - (byRev.get(a)||0))[0];
+  }
 }
 
-let state = { rep:'', type:'', warehouse:'', search:'', tab:'account', dateRange:'all', customStart:'', customEnd:'', productLinesOnly:false,
+let state = { page:'dashboard', rep:'', type:'', warehouse:'', search:'', dateRange:'all', customStart:'', customEnd:'', productLinesOnly:false,
+  selectedAccount:null, bdmSearch:'', dashboardRep:'',
   acctSort:{key:'revenue', dir:'desc'}, orderSort:{key:'date', dir:'desc'}, productSort:{key:'qty', dir:'desc'} };
 
 // Bounds for the chosen date range. Returns [start, end) — end is exclusive so a
@@ -387,11 +602,16 @@ function getRangeBounds(key){
   return [null, null];
 }
 
-function filteredLines(){
+// All lines matching the global filters (rep/type/warehouse/date/search), used
+// on the Accounts/Orders/Products/Reports pages. Pass repOverride to filter by
+// a specific rep regardless of the global "Sales Rep" filter — used by the
+// Dashboard page, whose BDM picker is independent of that global filter.
+function filteredLines(repOverride){
+  const rep = repOverride !== undefined ? repOverride : state.rep;
   const q = state.search.trim().toLowerCase();
   const [rangeStart, rangeEnd] = state.dateRange !== 'all' ? getRangeBounds(state.dateRange) : [null, null];
   return LINES.filter(l => {
-    if(state.rep && repKey(l) !== state.rep) return false;
+    if(rep && repKey(l) !== rep) return false;
     if(state.type && (l.customer_type || 'Unspecified') !== state.type) return false;
     if(state.warehouse && (l.warehouse || 'Unspecified') !== state.warehouse) return false;
     if(rangeStart || rangeEnd){
@@ -410,7 +630,7 @@ function aggregateAccounts(lines){
   for(const l of lines){
     const key = repKey(l) + '||' + l.customer;
     if(!map.has(key)) map.set(key, {
-      repKey: repKey(l), rep: repLabel(l), customer: l.customer, customer_type: l.customer_type || 'Unspecified',
+      repKey: repKey(l), rep: repLabel(l), customer: l.customer, customer_code: l.customer_code, customer_type: l.customer_type || 'Unspecified',
       orders: new Set(), qty: 0, revenue: 0, last: null,
     });
     const a = map.get(key);
@@ -428,11 +648,12 @@ function aggregateOrders(lines){
     if(!map.has(l.order_no)) map.set(l.order_no, {
       order_no: l.order_no, customer: l.customer, repKey: repKey(l), rep: repLabel(l),
       date: l.completed_date, warehouse: l.warehouse || 'Unspecified', customer_type: l.customer_type || 'Unspecified',
-      status: l.status, qty: 0, revenue: 0, products: [],
+      status: l.status, qty: 0, revenue: 0, products: [], items: 0,
     });
     const o = map.get(l.order_no);
     o.qty += (l.quantity||0);
     o.revenue += (l.sub_total||0);
+    o.items += 1;
     if(l.product_code) o.products.push(l.product_code);
   }
   return [...map.values()];
@@ -496,51 +717,167 @@ function sortProduct(key){
   render();
 }
 
-function setTab(name){
-  state.tab = name;
-  document.getElementById('tab-account').style.display = name === 'account' ? '' : 'none';
-  document.getElementById('tab-order').style.display = name === 'order' ? '' : 'none';
-  document.getElementById('tab-product').style.display = name === 'product' ? '' : 'none';
-  document.getElementById('tabBtnAccount').classList.toggle('active', name === 'account');
-  document.getElementById('tabBtnOrder').classList.toggle('active', name === 'order');
-  document.getElementById('tabBtnProduct').classList.toggle('active', name === 'product');
+const PAGE_META = {
+  dashboard: {title:'Sales Dashboard', subtitle:'Track accounts, orders and top purchased SKUs'},
+  accounts: {title:'Accounts', subtitle:'All accounts across sales reps'},
+  orders: {title:'Orders', subtitle:'Every sales order, across all reps and accounts'},
+  products: {title:'Products / SKUs', subtitle:'What is selling, by SKU and by sales rep'},
+  reports: {title:'Reports', subtitle:'Revenue, accounts and products at a glance'},
+};
+
+// The Accounts/Orders/Products/Reports pages share the global filter panel
+// (Sales Rep / Customer Type / Warehouse) — the subtitle always says exactly
+// what's currently filtering the page, so a scoped view is never mistaken for "all".
+function activeFilterSummary(){
+  const parts = [];
+  if(state.rep) parts.push('Rep: ' + (state.rep===NO_REP ? 'No Rep Assigned' : state.rep));
+  if(state.type) parts.push('Type: ' + state.type);
+  if(state.warehouse) parts.push('Warehouse: ' + state.warehouse);
+  if(state.dateRange !== 'all') parts.push(DATE_RANGE_LABEL[state.dateRange] || '');
+  if(state.search.trim()) parts.push('Search: "' + state.search.trim() + '"');
+  return parts.length ? ' — filtered by ' + parts.join(', ') : '';
+}
+
+function setPage(name){
+  state.page = name;
+  ['dashboard','accounts','orders','products','reports'].forEach(p => {
+    document.getElementById('page-' + p).style.display = p === name ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+    el.classList.toggle('active', el.dataset.page === name);
+  });
+  document.getElementById('pageTitle').textContent = PAGE_META[name].title;
+  render();
+}
+
+// Used by "View all orders →" / "View all SKUs →" links on the Dashboard page:
+// jump to that page, pre-filtered to the currently selected account.
+function goToPage(name, filterToSelectedAccount){
+  if(filterToSelectedAccount && state.selectedAccount){
+    state.search = state.selectedAccount;
+    document.getElementById('fSearch').value = state.selectedAccount;
+  }
+  setPage(name);
 }
 
 function updateSortArrows(){
-  document.querySelectorAll('#tab-account th.sortable').forEach(th => {
+  document.querySelectorAll('#page-accounts th.sortable').forEach(th => {
     const k = th.dataset.sort;
     th.classList.toggle('active', k === state.acctSort.key);
     th.querySelector('.arrow').textContent = k === state.acctSort.key ? (state.acctSort.dir === 'asc' ? '↑' : '↓') : '↕';
   });
-  document.querySelectorAll('#tab-order th.sortable').forEach(th => {
+  document.querySelectorAll('#page-orders th.sortable').forEach(th => {
     const k = th.dataset.sort;
     th.classList.toggle('active', k === state.orderSort.key);
     th.querySelector('.arrow').textContent = k === state.orderSort.key ? (state.orderSort.dir === 'asc' ? '↑' : '↓') : '↕';
   });
-  document.querySelectorAll('#tab-product th.sortable').forEach(th => {
+  document.querySelectorAll('#page-products th.sortable').forEach(th => {
     const k = th.dataset.sort;
     th.classList.toggle('active', k === state.productSort.key);
     th.querySelector('.arrow').textContent = k === state.productSort.key ? (state.productSort.dir === 'asc' ? '↑' : '↓') : '↕';
   });
 }
 
-function renderStats(lines){
-  const revenue = lines.reduce((s,l) => s + (l.sub_total||0), 0);
-  const orders = new Set(lines.map(l => l.order_no)).size;
-  const accounts = new Set(lines.map(l => l.customer)).size;
-  const reps = new Set(lines.map(repKey)).size;
-  const hasUnassigned = lines.some(l => repKey(l) === NO_REP);
-  const avgOrder = orders ? revenue / orders : 0;
-  document.getElementById('statTiles').innerHTML = `
-    <div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-value">${fmtMoney(revenue)}</div><div class="stat-sub">${orders} sales orders</div></div>
-    <div class="stat-card"><div class="stat-label">Sales Orders</div><div class="stat-value">${orders}</div><div class="stat-sub">${lines.length} line items</div></div>
-    <div class="stat-card"><div class="stat-label">Avg Order Value</div><div class="stat-value">${fmtMoney(avgOrder)}</div><div class="stat-sub">per sales order</div></div>
-    <div class="stat-card"><div class="stat-label">Accounts</div><div class="stat-value">${accounts}</div><div class="stat-sub">unique customers</div></div>
-    <div class="stat-card"><div class="stat-label">Sales Reps</div><div class="stat-value">${reps}</div><div class="stat-sub">${hasUnassigned ? 'incl. unassigned' : 'active reps'}</div></div>
-  `;
+function statCardHTML(label, value, sub, icon, bg, fg){
+  return `<div class="stat-card">
+    <div class="stat-icon" style="background:${bg};color:${fg}">${icon}</div>
+    <div><div class="stat-label">${label}</div><div class="stat-value">${value}</div>${sub?`<div class="stat-sub">${sub}</div>`:''}</div>
+  </div>`;
+}
+const ICON_BUILDING = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>';
+const ICON_MONEY = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 15c.5 1 1.5 1.5 3 1.5s2.7-.7 2.7-2-1-1.8-2.7-2-2.7-.8-2.7-2 1.2-2 2.7-2 2.5.5 3 1.5"/></svg>';
+const ICON_CART = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h2l2.4 12.2a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.6L21 7H6"/></svg>';
+const ICON_PRODUCT = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/></svg>';
+const ICON_PEOPLE = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="18" cy="9" r="2.4"/><path d="M16 14.2c2.6.3 4.5 2.2 4.5 4.8"/></svg>';
+
+/* ------------------------------------------------------------------ */
+/* Dashboard page: BDM picker -> accounts owned by that rep -> drill-down */
+/* ------------------------------------------------------------------ */
+function renderBDMList(){
+  const q = state.bdmSearch.trim().toLowerCase();
+  const reps = ALL_REP_KEYS.filter(k => !q || (k===NO_REP ? 'no rep assigned' : k.toLowerCase()).includes(q));
+  document.getElementById('bdmList').innerHTML = reps.map(k => `
+    <div class="bdm-item ${state.dashboardRep===k?'active':''}" onclick="selectBDM('${k.replace(/'/g,"\\'")}')">
+      <span class="rep-dot" style="background:${REP_COLOR[k]}"></span>${esc(k===NO_REP ? 'No Rep Assigned' : k)}
+    </div>
+  `).join('') || '<p style="color:var(--ink-muted);font-size:13px;">No matching reps.</p>';
+}
+function selectBDM(key){
+  state.dashboardRep = key;
+  state.selectedAccount = null;
+  render();
+}
+document.getElementById('bdmSearch').addEventListener('input', e => { state.bdmSearch = e.target.value; renderBDMList(); });
+
+function renderDashboardPage(){
+  const lines = filteredLines(state.dashboardRep); // scoped to the BDM picked on this page, not the global rep filter
+  const accounts = aggregateAccounts(lines).sort((a,b) => b.revenue - a.revenue);
+
+  renderBDMList();
+  const repLabelText = state.dashboardRep ? (state.dashboardRep===NO_REP ? 'No Rep Assigned' : esc(state.dashboardRep)) : 'All Reps';
+  document.getElementById('dashAccountsHeading').innerHTML = `Accounts owned by <b>${repLabelText}</b>`;
+  document.getElementById('dashAcctTableHeading').textContent = 'Accounts owned by ' + (state.dashboardRep ? (state.dashboardRep===NO_REP?'No Rep Assigned':state.dashboardRep) : 'All Reps');
+
+  const totalPurchase = accounts.reduce((s,a) => s + a.revenue, 0);
+  const totalOrders = new Set(lines.map(l => l.order_no)).size;
+  document.getElementById('dashStatTiles').innerHTML =
+    statCardHTML('Total Accounts', accounts.length, null, ICON_BUILDING, '#e8f1fc', '#2a78d6') +
+    statCardHTML('Total Purchase', fmtMoney(totalPurchase), null, ICON_MONEY, '#e6f7ec', '#0ca30c') +
+    statCardHTML('Total Orders', totalOrders, null, ICON_CART, '#f2eafd', '#7a4ae0');
+
+  document.getElementById('dashAcctCount').textContent = accounts.length + ' account' + (accounts.length===1?'':'s');
+  document.getElementById('dashAcctBody').innerHTML = accounts.length ? accounts.map(a => `
+    <tr class="clickable ${state.selectedAccount===a.customer?'row-selected':''}" onclick="selectAccount('${a.customer.replace(/'/g,"\\'")}')">
+      <td><span class="rep-name">${esc(a.customer)}</span></td>
+      <td>${esc(acctCode(a.customer_code, a.customer))}</td>
+      <td class="num">${fmtMoney(a.revenue)}</td>
+      <td class="num">${a.orders}</td>
+      <td>${fmtDateOnly(a.last)}</td>
+      <td><span class="row-chevron">›</span></td>
+    </tr>
+  `).join('') : '<tr class="empty-row"><td colspan="6">No accounts match the current filters.</td></tr>';
+
+  // Auto-select an account for the drill-down section if none (or an invalid one) is selected.
+  if(!state.selectedAccount || !accounts.some(a => a.customer === state.selectedAccount)){
+    state.selectedAccount = accounts.length ? accounts[0].customer : null;
+  }
+  document.getElementById('dashSelectedAcctName').textContent = state.selectedAccount
+    ? state.selectedAccount + (accounts.find(a=>a.customer===state.selectedAccount) ? ' (' + acctCode(accounts.find(a=>a.customer===state.selectedAccount).customer_code, state.selectedAccount) + ')' : '')
+    : 'No account selected';
+
+  const acctLines = state.selectedAccount ? lines.filter(l => l.customer === state.selectedAccount) : [];
+  const acctOrders = aggregateOrders(acctLines).sort((a,b) => new Date(b.date) - new Date(a.date));
+  document.getElementById('dashOrdersBody').innerHTML = acctOrders.length ? acctOrders.slice(0,8).map(o => `
+    <tr>
+      <td>${fmtDateOnly(o.date)}</td>
+      <td>${esc(o.order_no)}</td>
+      <td class="num">${fmtMoney(o.revenue)}</td>
+      <td class="num">${o.items}</td>
+      <td><span class="badge"><span class="idot"></span>${esc(o.status || 'Completed')}</span></td>
+    </tr>
+  `).join('') : '<tr class="empty-row"><td colspan="5">No orders for this account.</td></tr>';
+
+  const acctProducts = aggregateProducts(acctLines, false).sort((a,b) => b.qty - a.qty).slice(0,8);
+  const maxQty = acctProducts.length ? acctProducts[0].qty : 1;
+  document.getElementById('dashSkuChart').innerHTML = acctProducts.length ? acctProducts.map(p => `
+    <div class="chart-row">
+      <div class="chart-top">
+        <div class="chart-label" title="${esc(p.product_code)}">${esc(p.product_code)}<span class="chart-value-sub">${esc(skuName(p.product_code))}</span></div>
+        <div class="chart-value">${p.qty} sold<span class="chart-value-sub">${fmtMoney(p.revenue)}</span></div>
+      </div>
+      <div class="chart-track"><div class="chart-fill" style="width:${maxQty?(p.qty/maxQty*100):0}%;background:var(--brand)"></div></div>
+    </div>
+  `).join('') : '<p style="color:var(--ink-muted);font-size:13px;margin:0;">No SKUs purchased by this account yet.</p>';
+}
+function selectAccount(customer){
+  state.selectedAccount = customer;
+  render();
 }
 
-function renderRepChart(accounts){
+/* ------------------------------------------------------------------ */
+/* Accounts / Orders / Products pages (full lists, same filters apply) */
+/* ------------------------------------------------------------------ */
+function renderRepChart(accounts, elId, countElId){
   const byRep = new Map();
   for(const a of accounts){
     if(!byRep.has(a.repKey)) byRep.set(a.repKey, {rep:a.rep, repKey:a.repKey, revenue:0, orders:0});
@@ -550,8 +887,8 @@ function renderRepChart(accounts){
   }
   const rows = [...byRep.values()].sort((a,b) => b.revenue - a.revenue);
   const max = rows.length ? rows[0].revenue : 1;
-  document.getElementById('repChartCount').textContent = rows.length + ' rep' + (rows.length===1?'':'s');
-  document.getElementById('repChart').innerHTML = rows.map(r => `
+  document.getElementById(countElId).textContent = rows.length + ' rep' + (rows.length===1?'':'s');
+  document.getElementById(elId).innerHTML = rows.map(r => `
     <div class="chart-row">
       <div class="chart-top">
         <div class="chart-label"><span class="rep-dot" style="background:${REP_COLOR[r.repKey]}"></span>${esc(r.rep)}</div>
@@ -562,7 +899,7 @@ function renderRepChart(accounts){
   `).join('') || '<p style="color:var(--ink-muted);font-size:13px;margin:0;">No data for this filter.</p>';
 }
 
-function renderAcctChart(accounts){
+function renderAcctChart(accounts, elId, countElId){
   const byCust = new Map();
   for(const a of accounts){
     if(!byCust.has(a.customer)) byCust.set(a.customer, 0);
@@ -570,8 +907,8 @@ function renderAcctChart(accounts){
   }
   const rows = [...byCust.entries()].map(([customer,revenue]) => ({customer,revenue})).sort((a,b) => b.revenue - a.revenue).slice(0,8);
   const max = rows.length ? rows[0].revenue : 1;
-  document.getElementById('acctChartCount').textContent = 'top ' + rows.length + ' of ' + byCust.size;
-  document.getElementById('acctChart').innerHTML = rows.map(r => `
+  document.getElementById(countElId).textContent = 'top ' + rows.length + ' of ' + byCust.size;
+  document.getElementById(elId).innerHTML = rows.map(r => `
     <div class="chart-row">
       <div class="chart-top">
         <div class="chart-label">${esc(r.customer)}</div>
@@ -582,7 +919,10 @@ function renderAcctChart(accounts){
   `).join('') || '<p style="color:var(--ink-muted);font-size:13px;margin:0;">No data for this filter.</p>';
 }
 
-function renderAccountTable(accounts){
+function renderAccountsPage(lines, accounts){
+  renderStatsInto('acctStatTiles', lines);
+  renderRepChart(accounts, 'repChart', 'repChartCount');
+  renderAcctChart(accounts, 'acctChart', 'acctChartCount');
   const sorted = sortRows(accounts, state.acctSort, ACCOUNT_GETTERS);
   document.getElementById('acctTableCount').textContent = sorted.length + ' account' + (sorted.length===1?'':'s');
   document.getElementById('acctBody').innerHTML = sorted.length ? sorted.map(a => `
@@ -605,7 +945,7 @@ function productsCell(products){
   return `<span title="${esc(products.join(', '))}">${esc(shown)}${esc(extra)}</span>`;
 }
 
-function renderOrderTable(orders){
+function renderOrdersPage(orders){
   const sorted = sortRows(orders, state.orderSort, ORDER_GETTERS);
   document.getElementById('orderTableCount').textContent = sorted.length + ' order' + (sorted.length===1?'':'s');
   document.getElementById('orderBody').innerHTML = sorted.length ? sorted.map(o => `
@@ -617,23 +957,25 @@ function renderOrderTable(orders){
       <td>${productsCell(o.products)}</td>
       <td>${esc(o.warehouse)}</td>
       <td>${esc(o.customer_type)}</td>
-      <td><span class="badge"><span class="idot"></span>${esc(o.status)}</span></td>
+      <td><span class="badge"><span class="idot"></span>${esc(o.status || 'Completed')}</span></td>
       <td class="num">${o.qty}</td>
       <td class="num">${fmtMoney(o.revenue)}</td>
     </tr>
   `).join('') : '<tr class="empty-row"><td colspan="10">No orders match the current filters.</td></tr>';
 }
 
-function renderProductChart(products){
+function renderProductChart(products, elId, countElId, repLabelElId){
   const rows = products.slice().sort((a,b) => b.qty - a.qty).slice(0,10);
   const max = rows.length ? rows[0].qty : 1;
-  const repLabelEl = document.getElementById('productChartRepLabel');
-  repLabelEl.textContent = state.rep ? ' — ' + (state.rep===NO_REP ? 'No Rep Assigned' : state.rep) : ' — All Reps';
-  document.getElementById('productChartCount').textContent = 'top ' + rows.length + ' of ' + products.length + ' by qty sold';
-  document.getElementById('productChart').innerHTML = rows.map(r => `
+  if(repLabelElId){
+    const repLabelEl = document.getElementById(repLabelElId);
+    repLabelEl.textContent = state.rep ? ' — ' + (state.rep===NO_REP ? 'No Rep Assigned' : state.rep) : ' — All Reps';
+  }
+  document.getElementById(countElId).textContent = 'top ' + rows.length + ' of ' + products.length + ' by qty sold';
+  document.getElementById(elId).innerHTML = rows.map(r => `
     <div class="chart-row">
       <div class="chart-top">
-        <div class="chart-label" title="${esc(r.product_code)}">${esc(r.product_code)}</div>
+        <div class="chart-label" title="${esc(r.product_code)}">${esc(r.product_code)}<span class="chart-value-sub">${esc(skuName(r.product_code))}</span></div>
         <div class="chart-value">${r.qty} sold</div>
       </div>
       <div class="chart-track"><div class="chart-fill" style="width:${max?(r.qty/max*100):0}%;background:var(--brand)"></div></div>
@@ -641,34 +983,78 @@ function renderProductChart(products){
   `).join('') || '<p style="color:var(--ink-muted);font-size:13px;margin:0;">No data for this filter.</p>';
 }
 
-function renderProductTable(products){
+function renderProductsPage(products){
+  renderProductChart(products, 'productChart', 'productChartCount', 'productChartRepLabel');
   const sorted = sortRows(products, state.productSort, PRODUCT_GETTERS);
   document.getElementById('productTableCount').textContent = sorted.length + ' row' + (sorted.length===1?'':'s');
   document.getElementById('productBody').innerHTML = sorted.length ? sorted.map(p => `
     <tr>
       <td><span class="rep-dot" style="background:${REP_COLOR[p.repKey]}"></span>${esc(p.rep)}</td>
       <td>${esc(p.product_code)}</td>
+      <td>${esc(skuName(p.product_code))}</td>
       <td class="num">${p.orders}</td>
       <td class="num">${p.qty}</td>
       <td class="num">${fmtMoney(p.revenue)}</td>
     </tr>
-  `).join('') : '<tr class="empty-row"><td colspan="5">No products match the current filters.</td></tr>';
+  `).join('') : '<tr class="empty-row"><td colspan="6">No products match the current filters.</td></tr>';
 }
 
+function renderStatsInto(elId, lines){
+  const revenue = lines.reduce((s,l) => s + (l.sub_total||0), 0);
+  const orders = new Set(lines.map(l => l.order_no)).size;
+  const accounts = new Set(lines.map(l => l.customer)).size;
+  const reps = new Set(lines.map(repKey)).size;
+  const avgOrder = orders ? revenue / orders : 0;
+  document.getElementById(elId).innerHTML =
+    statCardHTML('Total Revenue', fmtMoney(revenue), orders + ' sales orders', ICON_MONEY, '#e6f7ec', '#0ca30c') +
+    statCardHTML('Sales Orders', orders, lines.length + ' line items', ICON_CART, '#f2eafd', '#7a4ae0') +
+    statCardHTML('Avg Order Value', fmtMoney(avgOrder), 'per sales order', ICON_MONEY, '#fdf0e2', '#eb6834') +
+    statCardHTML('Accounts', accounts, 'unique customers', ICON_BUILDING, '#e8f1fc', '#2a78d6') +
+    statCardHTML('Sales Reps', reps, 'active reps', ICON_PEOPLE, '#fdeaf0', '#e35a86');
+}
+
+function renderReportsPage(lines, accounts, products){
+  renderStatsInto('reportStatTiles', lines);
+  renderRepChart(accounts, 'repChart2', 'repChart2Count');
+  renderAcctChart(accounts, 'acctChart2', 'acctChart2Count');
+  renderProductChart(products, 'productChart2', 'productChart2Count', null);
+}
+
+/* ------------------------------------------------------------------ */
+/* Filters panel + date range button label                            */
+/* ------------------------------------------------------------------ */
+const DATE_RANGE_LABEL = {all:'All Time', this_week:'This Week', this_month:'This Month', last_month:'Last Month', custom:'Custom Range'};
+function updateDateRangeBtnLabel(){
+  let label = DATE_RANGE_LABEL[state.dateRange] || 'All Time';
+  if(state.dateRange === 'custom' && state.customStart && state.customEnd){
+    label = state.customStart + ' → ' + state.customEnd;
+  }
+  document.getElementById('dateRangeBtnLabel').textContent = label;
+}
+function openFilters(){ document.getElementById('filterOverlay').classList.add('open'); }
+function closeFilters(){ document.getElementById('filterOverlay').classList.remove('open'); }
+
+/* ------------------------------------------------------------------ */
+/* Master render: compute shared aggregates once, dispatch by page     */
+/* ------------------------------------------------------------------ */
 function render(){
   const lines = filteredLines();
   const accounts = aggregateAccounts(lines);
   const orders = aggregateOrders(lines);
   const products = aggregateProducts(lines, state.productLinesOnly);
-  document.getElementById('resultCount').textContent = lines.length + ' of ' + LINES.length + ' lines';
-  renderStats(lines);
-  renderRepChart(accounts);
-  renderAcctChart(accounts);
-  renderAccountTable(accounts);
-  renderOrderTable(orders);
-  renderProductChart(products);
-  renderProductTable(products);
+
+  if(state.page === 'dashboard') renderDashboardPage();
+  else if(state.page === 'accounts') renderAccountsPage(lines, accounts);
+  else if(state.page === 'orders') renderOrdersPage(orders);
+  else if(state.page === 'products') renderProductsPage(products);
+  else if(state.page === 'reports') renderReportsPage(lines, accounts, products);
+
+  document.getElementById('pageSubtitle').textContent = state.page === 'dashboard'
+    ? PAGE_META.dashboard.subtitle
+    : PAGE_META[state.page].subtitle + activeFilterSummary();
+
   updateSortArrows();
+  updateDateRangeBtnLabel();
 }
 
 ['fRep','fType','fWarehouse'].forEach(id => {
@@ -682,8 +1068,7 @@ document.getElementById('fSearch').addEventListener('input', e => { state.search
 document.getElementById('fDateRange').addEventListener('change', e => {
   state.dateRange = e.target.value;
   const isCustom = state.dateRange === 'custom';
-  document.getElementById('fCustomStart').style.display = isCustom ? '' : 'none';
-  document.getElementById('fCustomEnd').style.display = isCustom ? '' : 'none';
+  document.getElementById('fCustomWrap').style.display = isCustom ? '' : 'none';
   render();
 });
 document.getElementById('fCustomStart').addEventListener('change', e => { state.customStart = e.target.value; render(); });
