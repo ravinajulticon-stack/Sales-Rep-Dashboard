@@ -468,12 +468,34 @@ async function fetchLatestBatch(){
   const latest = await latestRes.json();
   if(!latest.length) return { rows: [], importedAt: null };
   const batchId = latest[0].batch_id;
-  const rowsRes = await fetch(
-    `${SUPA_URL}/rest/v1/${TABLE}?select=*&batch_id=eq.${encodeURIComponent(batchId)}&order=id.asc`,
-    { headers: { apikey: SUPA_KEY } }
-  );
-  if(!rowsRes.ok) throw new Error('Could not load the data (' + rowsRes.status + ')');
-  const rows = await rowsRes.json();
+
+  /* PostgREST caps an unbounded select at 1000 rows, so a batch larger than
+     that silently arrived truncated and every total on the page was computed
+     from the first 1000 lines only. That went unnoticed while batches came
+     from a hand-picked export; the automated Unleashed feed writes a few
+     thousand a day. Page through until a short page comes back.
+
+     This is about the numbers being right, not about how many are shown: the
+     tables already cap themselves with slice(), and the "View all" pages do
+     their own paging. Everything here has to be loaded so that Total
+     Purchase, Total Orders and Total Accounts count the whole batch. */
+  const PAGE = 1000;
+  const rows = [];
+  for(let from = 0; ; from += PAGE){
+    const rowsRes = await fetch(
+      `${SUPA_URL}/rest/v1/${TABLE}?select=*&batch_id=eq.${encodeURIComponent(batchId)}&order=id.asc`,
+      { headers: { apikey: SUPA_KEY, Range: `${from}-${from + PAGE - 1}`, 'Range-Unit': 'items' } }
+    );
+    /* 206 Partial Content is the normal answer to a Range request; 200 comes
+       back when the range covers the whole remainder. */
+    if(!rowsRes.ok && rowsRes.status !== 206) throw new Error('Could not load the data (' + rowsRes.status + ')');
+    const page = await rowsRes.json();
+    rows.push(...page);
+    if(page.length < PAGE) break;
+    /* A batch this size means something upstream has gone wrong; stop rather
+       than page for ever. */
+    if(rows.length >= 200000) break;
+  }
   return { rows, importedAt: latest[0].imported_at };
 }
 
