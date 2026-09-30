@@ -566,11 +566,21 @@ let ALL_TYPES = [];
 let ALL_WAREHOUSES = [];
 let didDefaultRep = false;
 
+/* The BDMs this dashboard is for. The rep list used to be built purely from
+   whoever appeared in the data, which meant a BDM who had sold nothing was
+   absent from the picker altogether — and on a scoreboard the person at zero
+   is exactly the one worth seeing. Jerald, 30 Sep: "I can see only 2 BDM?".
+   Listed here rather than derived, so the four always appear; anyone else who
+   turns up in the data is still added on top. */
+const KNOWN_BDMS = ['Brett Gordon', 'Cameron Levy', 'Husain Ali', 'Nathan Salman'];
+
 function rebuildFromLines(){
-  ALL_REP_KEYS = [...new Set(LINES.map(repKey))].sort((a,b) => {
+  /* Keys are the rep names themselves, so a name with no lines is a valid key
+     and simply renders with zero everywhere. */
+  ALL_REP_KEYS = [...new Set([...KNOWN_BDMS, ...LINES.map(repKey)])].sort((a,b) => {
     if(a===NO_REP) return 1;
     if(b===NO_REP) return -1;
-    return repLabel(LINES.find(l=>repKey(l)===a)).localeCompare(repLabel(LINES.find(l=>repKey(l)===b)));
+    return a.localeCompare(b);
   });
   REP_COLOR = {};
   ALL_REP_KEYS.forEach((k,i) => { REP_COLOR[k] = PALETTE[i % PALETTE.length]; });
