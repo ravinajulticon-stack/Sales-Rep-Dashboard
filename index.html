@@ -123,6 +123,20 @@
   .rep-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;flex-shrink:0;vertical-align:middle;}
   .badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:100px;background:#e8f6ee;color:var(--good);}
   .badge .idot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+  /* Sell Price Tier / Payment Mode tags */
+  .tbl-compact thead th, .tbl-compact tbody td{padding-left:10px;padding-right:10px;}
+  .tag{display:inline-flex;align-items:center;font-size:12px;font-weight:600;padding:2px 9px;border-radius:100px;white-space:nowrap;}
+  .tag-tier{background:#e8f1fc;color:var(--brand-dark);}
+  .tag-pay{background:#f1f3f7;color:var(--ink-secondary);}
+  .tag-more{padding:2px 2px;color:var(--ink-muted);}
+  .tag-none{color:var(--ink-muted);}
+  .tag-wrap{display:inline-flex;align-items:center;gap:4px;}
+  .acct-selected-chips{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin:-6px 0 14px;}
+  .acct-selected-chips:empty{display:none;}
+  .chip-pair{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;}
+  .chip-pair .tag{text-transform:none;letter-spacing:0;}
+  .feed-note{margin:0 0 16px;}
+  .mix-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-bottom:18px;align-items:start;}
   .empty-row td{color:var(--ink-muted);text-align:center;padding:30px 18px;}
   .row-chevron{color:var(--ink-muted);float:right;}
 
@@ -315,7 +329,7 @@
         <div class="table-scroll" style="max-height:320px;">
         <table>
           <thead><tr>
-            <th>Account Name</th><th>Account Code</th><th class="num">Total Purchase (₹)</th><th class="num">Orders</th><th>Last Order Date</th><th></th>
+            <th>Account Name</th><th>Account Code</th><th>Sell Price Tier</th><th>Payment Mode</th><th class="num">Total Purchase ($)</th><th class="num">Orders</th><th>Last Order Date</th><th></th>
           </tr></thead>
           <tbody id="dashAcctBody"></tbody>
         </table>
@@ -324,13 +338,14 @@
 
       <p class="acct-selected-label">Account Selected</p>
       <p class="acct-selected-name" id="dashSelectedAcctName">—</p>
+      <div class="acct-selected-chips" id="dashSelectedAcctChips"></div>
 
       <div class="two-col">
         <div class="card">
           <div class="card-head"><h2>1. Details of Each Order</h2><a class="card-link" onclick="goToPage('orders', true)">View all orders →</a></div>
           <div class="table-scroll" style="max-height:340px;">
-          <table>
-            <thead><tr><th>Order Date</th><th>Order No.</th><th class="num">Total Amount</th><th class="num">Items</th><th>Status</th></tr></thead>
+          <table class="tbl-compact">
+            <thead><tr><th>Order Date</th><th>Order No.</th><th class="num">Total Amount</th><th class="num">Items</th><th>Status</th><th>Payment Mode</th></tr></thead>
             <tbody id="dashOrdersBody"></tbody>
           </table>
           </div>
@@ -345,6 +360,7 @@
     <!-- ============ ACCOUNTS PAGE ============ -->
     <div id="page-accounts" style="display:none">
       <div class="stats" id="acctStatTiles"></div>
+      <div class="note feed-note" id="feedNote" style="display:none"></div>
       <div class="two-col">
         <div class="card">
           <div class="card-head"><h2>Revenue by Sales Rep</h2><span class="count" id="repChartCount"></span></div>
@@ -355,15 +371,27 @@
           <div class="chart-card"><div id="acctChart"></div></div>
         </div>
       </div>
+      <div class="mix-row" id="mixRow" style="display:none">
+        <div class="card" id="tierCard">
+          <div class="card-head"><h2>Revenue by Sell Price Tier</h2><span class="count" id="tierChartCount"></span></div>
+          <div class="chart-card"><div id="tierChart"></div></div>
+        </div>
+        <div class="card" id="payCard">
+          <div class="card-head"><h2>Revenue by Payment Mode</h2><span class="count" id="payChartCount"></span></div>
+          <div class="chart-card"><div id="payChart"></div></div>
+        </div>
+      </div>
       <div class="card">
         <div class="card-head"><h2>All Accounts</h2><span class="count" id="acctTableCount"></span></div>
         <div class="table-scroll">
-        <table>
+        <table class="tbl-compact">
           <thead>
             <tr>
               <th class="sortable" data-sort="rep" onclick="sortAccount('rep')">Sales Rep <span class="arrow">↕</span></th>
               <th class="sortable" data-sort="customer" onclick="sortAccount('customer')">Customer <span class="arrow">↕</span></th>
               <th>Customer Type</th>
+              <th class="sortable" data-sort="tier" onclick="sortAccount('tier')">Sell Price Tier <span class="arrow">↕</span></th>
+              <th class="sortable" data-sort="payment" onclick="sortAccount('payment')">Payment Mode <span class="arrow">↕</span></th>
               <th class="num sortable" data-sort="orders" onclick="sortAccount('orders')">Orders <span class="arrow">↕</span></th>
               <th class="num sortable" data-sort="qty" onclick="sortAccount('qty')">Total Qty <span class="arrow">↕</span></th>
               <th class="num sortable active" data-sort="revenue" onclick="sortAccount('revenue')">Total Revenue <span class="arrow">↕</span></th>
@@ -381,7 +409,7 @@
       <div class="card">
         <div class="card-head"><h2>All Sales Orders</h2><span class="count" id="orderTableCount"></span></div>
         <div class="table-scroll">
-        <table>
+        <table class="tbl-compact">
           <thead>
             <tr>
               <th class="sortable" data-sort="order" onclick="sortOrder('order')">Order No. <span class="arrow">↕</span></th>
@@ -391,6 +419,7 @@
               <th>Products</th>
               <th>Warehouse</th>
               <th>Customer Type</th>
+              <th class="sortable" data-sort="payment" onclick="sortOrder('payment')">Payment Mode <span class="arrow">↕</span></th>
               <th>Status</th>
               <th class="num sortable" data-sort="qty" onclick="sortOrder('qty')">Qty <span class="arrow">↕</span></th>
               <th class="num sortable" data-sort="revenue" onclick="sortOrder('revenue')">Sub Total <span class="arrow">↕</span></th>
@@ -470,6 +499,16 @@
     <div class="filter-field bdm-panel">
       <p class="bdm-panel-title">Customer Type</p>
       <div class="bdm-list bdm-list-sm" id="fTypeList"></div>
+    </div>
+
+    <div class="filter-field bdm-panel" id="fTierPanel" style="display:none">
+      <p class="bdm-panel-title">Sell Price Tier</p>
+      <div class="bdm-list bdm-list-sm" id="fTierList"></div>
+    </div>
+
+    <div class="filter-field bdm-panel" id="fPayPanel" style="display:none">
+      <p class="bdm-panel-title">Payment Mode</p>
+      <div class="bdm-list bdm-list-sm" id="fPayList"></div>
     </div>
 
     <div class="filter-field bdm-panel">
@@ -600,6 +639,22 @@ function fmtDateOnly(iso){
 }
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+/* Sell Price Tier (Unleashed customer price group) and Payment Mode (Unleashed /
+   Shopify). Both arrive as optional columns on sales_order_lines; until the feed
+   fills them every cell shows "—" and the filters stay hidden. */
+function cleanVal(v){ return v == null ? '' : String(v).trim(); }
+let HAS_TIER = false, HAS_PAY = false;
+let ALL_TIERS = [], ALL_PAYS = [];
+function tierTag(t){ return t ? `<span class="tag tag-tier">${esc(t)}</span>` : '<span class="tag-none">—</span>'; }
+function payTag(p){ return p ? `<span class="tag tag-pay">${esc(p)}</span>` : '<span class="tag-none">—</span>'; }
+// Account-level payment cell: latest mode used, "+N" when other modes were also used.
+function payTagsHTML(a){
+  if(!a.payment) return '<span class="tag-none">—</span>';
+  const extra = a.payModes.length - 1;
+  const tip = a.payModes.map(m => `${m.mode} (${m.orders} order${m.orders===1?'':'s'})`).join(', ');
+  return `<span class="tag-wrap" title="${esc(tip)}"><span class="tag tag-pay">${esc(a.payment)}</span>${extra>0?`<span class="tag tag-more">+${extra}</span>`:''}</span>`;
+}
+
 // Lines whose "Product Code" is really a delivery / installation-service / credit-adjustment
 // line rather than a physical product — same data, just not a "product" for this purpose.
 function isNonProductCode(code){
@@ -647,6 +702,11 @@ function rebuildFromLines(){
 
   ALL_TYPES = [...new Set(LINES.map(l => l.customer_type || 'Unspecified'))].sort();
   ALL_WAREHOUSES = [...new Set(LINES.map(l => l.warehouse || 'Unspecified'))].sort();
+  HAS_TIER = LINES.some(l => cleanVal(l.sell_price_tier));
+  HAS_PAY = LINES.some(l => cleanVal(l.payment_mode));
+  const natural = (a,b) => a.localeCompare(b, undefined, {numeric:true, sensitivity:'base'});
+  ALL_TIERS = HAS_TIER ? [...new Set(LINES.map(l => cleanVal(l.sell_price_tier) || 'Unspecified'))].sort((a,b) => a==='Unspecified'?1:b==='Unspecified'?-1:natural(a,b)) : [];
+  ALL_PAYS = HAS_PAY ? [...new Set(LINES.map(l => cleanVal(l.payment_mode) || 'Unspecified'))].sort((a,b) => a==='Unspecified'?1:b==='Unspecified'?-1:natural(a,b)) : [];
 
   // The BDM picker on the Dashboard page and the "Sales Rep" filter used by
   // every other page are the same underlying selection (state.rep). On first
@@ -661,7 +721,7 @@ function rebuildFromLines(){
   }
 }
 
-let state = { page:'dashboard', rep:'', type:'', warehouse:'', search:'', dateRange:'all', customStart:'', customEnd:'', productLinesOnly:false,
+let state = { page:'dashboard', rep:'', type:'', warehouse:'', tier:'', pay:'', search:'', dateRange:'all', customStart:'', customEnd:'', productLinesOnly:false,
   selectedAccount:null, bdmSearch:'', filterRepSearch:'',
   acctSort:{key:'revenue', dir:'desc'}, orderSort:{key:'date', dir:'desc'}, productSort:{key:'qty', dir:'desc'} };
 
@@ -702,6 +762,8 @@ function filteredLines(){
     if(rep && repKey(l) !== rep) return false;
     if(state.type && (l.customer_type || 'Unspecified') !== state.type) return false;
     if(state.warehouse && (l.warehouse || 'Unspecified') !== state.warehouse) return false;
+    if(state.tier && (cleanVal(l.sell_price_tier) || 'Unspecified') !== state.tier) return false;
+    if(state.pay && (cleanVal(l.payment_mode) || 'Unspecified') !== state.pay) return false;
     if(rangeStart || rangeEnd){
       const d = l.completed_date ? new Date(l.completed_date) : null;
       if(!d) return false;
@@ -720,14 +782,27 @@ function aggregateAccounts(lines){
     if(!map.has(key)) map.set(key, {
       repKey: repKey(l), rep: repLabel(l), customer: l.customer, customer_code: l.customer_code, customer_type: l.customer_type || 'Unspecified',
       orders: new Set(), qty: 0, revenue: 0, last: null,
+      tier: '', _tierAt: -1, payment: '', _payAt: -1, _pay: new Map(),
     });
     const a = map.get(key);
+    // Sell Price Tier belongs to the customer: keep the value from the most recent line.
+    // Payment Mode belongs to the order: keep the latest, and count orders per mode.
+    const when = l.completed_date ? new Date(l.completed_date).getTime() : 0;
+    const t = cleanVal(l.sell_price_tier);
+    if(t && when >= a._tierAt){ a.tier = t; a._tierAt = when; }
+    const p = cleanVal(l.payment_mode);
+    if(p){
+      if(!a._pay.has(p)) a._pay.set(p, new Set());
+      a._pay.get(p).add(l.order_no);
+      if(when >= a._payAt){ a.payment = p; a._payAt = when; }
+    }
     a.orders.add(l.order_no);
     a.qty += (l.quantity||0);
     a.revenue += (l.sub_total||0);
     if(!a.last || new Date(l.completed_date) > new Date(a.last)) a.last = l.completed_date;
   }
-  return [...map.values()].map(a => ({...a, orders: a.orders.size}));
+  return [...map.values()].map(a => ({...a, orders: a.orders.size,
+    payModes: [...a._pay].map(([mode, s]) => ({mode, orders: s.size})).sort((x,y) => y.orders - x.orders)}));
 }
 
 function aggregateOrders(lines){
@@ -736,9 +811,10 @@ function aggregateOrders(lines){
     if(!map.has(l.order_no)) map.set(l.order_no, {
       order_no: l.order_no, customer: l.customer, repKey: repKey(l), rep: repLabel(l),
       date: l.completed_date, warehouse: l.warehouse || 'Unspecified', customer_type: l.customer_type || 'Unspecified',
-      status: l.status, qty: 0, revenue: 0, products: [], items: 0,
+      status: l.status, qty: 0, revenue: 0, products: [], items: 0, payment: '',
     });
     const o = map.get(l.order_no);
+    if(!o.payment) o.payment = cleanVal(l.payment_mode);
     o.qty += (l.quantity||0);
     o.revenue += (l.sub_total||0);
     o.items += 1;
@@ -780,10 +856,12 @@ function sortRows(rows, sort, getters){
 const ACCOUNT_GETTERS = {
   rep: r => r.rep, customer: r => r.customer, orders: r => r.orders, qty: r => r.qty,
   revenue: r => r.revenue, last: r => r.last ? new Date(r.last).getTime() : null,
+  tier: r => r.tier || null, payment: r => r.payment || null,
 };
 const ORDER_GETTERS = {
   order: r => r.order_no, customer: r => r.customer, rep: r => r.rep,
   date: r => r.date ? new Date(r.date).getTime() : null, qty: r => r.qty, revenue: r => r.revenue,
+  payment: r => r.payment || null,
 };
 const PRODUCT_GETTERS = {
   rep: r => r.rep, product: r => r.product_code, orders: r => r.orders, qty: r => r.qty, revenue: r => r.revenue,
@@ -791,12 +869,12 @@ const PRODUCT_GETTERS = {
 
 function sortAccount(key){
   if(state.acctSort.key === key) state.acctSort.dir = state.acctSort.dir === 'asc' ? 'desc' : 'asc';
-  else state.acctSort = {key, dir: (key==='rep'||key==='customer') ? 'asc' : 'desc'};
+  else state.acctSort = {key, dir: (key==='rep'||key==='customer'||key==='tier'||key==='payment') ? 'asc' : 'desc'};
   render();
 }
 function sortOrder(key){
   if(state.orderSort.key === key) state.orderSort.dir = state.orderSort.dir === 'asc' ? 'desc' : 'asc';
-  else state.orderSort = {key, dir: (key==='order'||key==='customer'||key==='rep') ? 'asc' : 'desc'};
+  else state.orderSort = {key, dir: (key==='order'||key==='customer'||key==='rep'||key==='payment') ? 'asc' : 'desc'};
   render();
 }
 function sortProduct(key){
@@ -824,6 +902,8 @@ function activeFilterSummary(opts){
   if(!skipRep && state.rep) parts.push('Rep: ' + (state.rep===NO_REP ? 'No Rep Assigned' : state.rep));
   if(state.type) parts.push('Type: ' + state.type);
   if(state.warehouse) parts.push('Warehouse: ' + state.warehouse);
+  if(state.tier) parts.push('Price Tier: ' + state.tier);
+  if(state.pay) parts.push('Payment: ' + state.pay);
   if(state.dateRange !== 'all') parts.push(DATE_RANGE_LABEL[state.dateRange] || '');
   if(state.search.trim()) parts.push('Search: "' + state.search.trim() + '"');
   return parts.length ? ' — filtered by ' + parts.join(', ') : '';
@@ -932,12 +1012,14 @@ function renderDashboardPage(){
     <tr class="clickable ${state.selectedAccount===a.customer?'row-selected':''}" onclick="selectAccount('${a.customer.replace(/'/g,"\\'")}')">
       <td><span class="rep-name">${esc(a.customer)}</span></td>
       <td>${esc(acctCode(a.customer_code, a.customer))}</td>
+      <td>${tierTag(a.tier)}</td>
+      <td>${payTagsHTML(a)}</td>
       <td class="num">${fmtMoney(a.revenue)}</td>
       <td class="num">${a.orders}</td>
       <td>${fmtDateOnly(a.last)}</td>
       <td><span class="row-chevron">›</span></td>
     </tr>
-  `).join('') : '<tr class="empty-row"><td colspan="6">No accounts match the current filters.</td></tr>';
+  `).join('') : '<tr class="empty-row"><td colspan="8">No accounts match the current filters.</td></tr>';
 
   // Auto-select an account for the drill-down section if none (or an invalid one) is selected.
   if(!state.selectedAccount || !accounts.some(a => a.customer === state.selectedAccount)){
@@ -946,6 +1028,11 @@ function renderDashboardPage(){
   document.getElementById('dashSelectedAcctName').textContent = state.selectedAccount
     ? state.selectedAccount + (accounts.find(a=>a.customer===state.selectedAccount) ? ' (' + acctCode(accounts.find(a=>a.customer===state.selectedAccount).customer_code, state.selectedAccount) + ')' : '')
     : 'No account selected';
+
+  const selAcct = accounts.find(a => a.customer === state.selectedAccount);
+  document.getElementById('dashSelectedAcctChips').innerHTML = (selAcct && (HAS_TIER || HAS_PAY))
+    ? `<span class="chip-pair">Sell Price Tier ${tierTag(selAcct.tier)}</span><span class="chip-pair">Payment Mode ${payTagsHTML(selAcct)}</span>`
+    : '';
 
   const acctLines = state.selectedAccount ? lines.filter(l => l.customer === state.selectedAccount) : [];
   const acctOrders = aggregateOrders(acctLines).sort((a,b) => new Date(b.date) - new Date(a.date));
@@ -956,8 +1043,9 @@ function renderDashboardPage(){
       <td class="num">${fmtMoney(o.revenue)}</td>
       <td class="num">${o.items}</td>
       <td><span class="badge"><span class="idot"></span>${esc(o.status || 'Completed')}</span></td>
+      <td>${payTag(o.payment)}</td>
     </tr>
-  `).join('') : '<tr class="empty-row"><td colspan="5">No orders for this account.</td></tr>';
+  `).join('') : '<tr class="empty-row"><td colspan="6">No orders for this account.</td></tr>';
 
   const acctProducts = aggregateProducts(acctLines, false).sort((a,b) => b.qty - a.qty).slice(0,8);
   const maxQty = acctProducts.length ? acctProducts[0].qty : 1;
@@ -1032,12 +1120,67 @@ function renderAccountsPage(lines, accounts){
       <td><span class="rep-dot" style="background:${REP_COLOR[a.repKey]}"></span><span class="rep-name">${esc(a.rep)}</span></td>
       <td>${esc(a.customer)}</td>
       <td>${esc(a.customer_type)}</td>
+      <td>${tierTag(a.tier)}</td>
+      <td>${payTagsHTML(a)}</td>
       <td class="num">${a.orders}</td>
       <td class="num">${a.qty}</td>
       <td class="num">${fmtMoney(a.revenue)}</td>
       <td>${fmtDateOnly(a.last)}</td>
     </tr>
-  `).join('') : '<tr class="empty-row"><td colspan="7">No accounts match the current filters.</td></tr>';
+  `).join('') : '<tr class="empty-row"><td colspan="9">No accounts match the current filters.</td></tr>';
+  renderFeedNote();
+  renderMixCharts(lines, accounts);
+}
+
+// Tells the viewer (once, plainly) when Sell Price Tier / Payment Mode haven't started
+// coming through from the Unleashed / Shopify feed, so the "—" cells aren't a mystery.
+function renderFeedNote(){
+  const el = document.getElementById('feedNote');
+  const missing = [];
+  if(!HAS_TIER) missing.push('<b>Sell Price Tier</b>');
+  if(!HAS_PAY) missing.push('<b>Payment Mode</b>');
+  if(!LINES.length || !missing.length){ el.style.display = 'none'; return; }
+  el.innerHTML = missing.join(' and ') + (missing.length>1?' are':' is') + ' not coming through from Unleashed / Shopify yet, so those columns show “—”. They fill in automatically as soon as the feed starts sending them.';
+  el.style.display = '';
+}
+
+function mixRowsHTML(rows, subLabel){
+  const max = rows.length ? Math.max(...rows.map(r => r.revenue), 1) : 1;
+  return rows.map(r => `
+    <div class="chart-row">
+      <div class="chart-top">
+        <div class="chart-label">${esc(r.label)}</div>
+        <div class="chart-value">${fmtMoney(r.revenue)}<span class="chart-value-sub">${r.n} ${subLabel}${r.n===1?'':'s'}</span></div>
+      </div>
+      <div class="chart-track"><div class="chart-fill" style="width:${max?(Math.max(r.revenue,0)/max*100):0}%;background:var(--brand)"></div></div>
+    </div>`).join('') || '<p style="color:var(--ink-muted);font-size:13px;margin:0;">No data for this filter.</p>';
+}
+function renderMixCharts(lines, accounts){
+  document.getElementById('tierCard').style.display = HAS_TIER ? '' : 'none';
+  document.getElementById('payCard').style.display = HAS_PAY ? '' : 'none';
+  document.getElementById('mixRow').style.display = (HAS_TIER || HAS_PAY) ? '' : 'none';
+  if(HAS_TIER){
+    const m = new Map();
+    for(const a of accounts){
+      const k = a.tier || 'Unspecified';
+      if(!m.has(k)) m.set(k, {label:k, revenue:0, accts:new Set()});
+      const r = m.get(k); r.revenue += a.revenue; r.accts.add(a.customer);
+    }
+    const rows = [...m.values()].map(r => ({label:r.label, revenue:r.revenue, n:r.accts.size})).sort((a,b) => b.revenue - a.revenue);
+    document.getElementById('tierChartCount').textContent = rows.length + ' tier' + (rows.length===1?'':'s');
+    document.getElementById('tierChart').innerHTML = mixRowsHTML(rows, 'account');
+  }
+  if(HAS_PAY){
+    const m = new Map();
+    for(const l of lines){
+      const k = cleanVal(l.payment_mode) || 'Unspecified';
+      if(!m.has(k)) m.set(k, {label:k, revenue:0, orders:new Set()});
+      const r = m.get(k); r.revenue += (l.sub_total||0); r.orders.add(l.order_no);
+    }
+    const rows = [...m.values()].map(r => ({label:r.label, revenue:r.revenue, n:r.orders.size})).sort((a,b) => b.revenue - a.revenue);
+    document.getElementById('payChartCount').textContent = rows.length + ' mode' + (rows.length===1?'':'s');
+    document.getElementById('payChart').innerHTML = mixRowsHTML(rows, 'order');
+  }
 }
 
 function productsCell(products){
@@ -1059,11 +1202,12 @@ function renderOrdersPage(orders){
       <td>${productsCell(o.products)}</td>
       <td>${esc(o.warehouse)}</td>
       <td>${esc(o.customer_type)}</td>
+      <td>${payTag(o.payment)}</td>
       <td><span class="badge"><span class="idot"></span>${esc(o.status || 'Completed')}</span></td>
       <td class="num">${o.qty}</td>
       <td class="num">${fmtMoney(o.revenue)}</td>
     </tr>
-  `).join('') : '<tr class="empty-row"><td colspan="10">No orders match the current filters.</td></tr>';
+  `).join('') : '<tr class="empty-row"><td colspan="11">No orders match the current filters.</td></tr>';
 }
 
 function renderProductChart(products, elId, countElId, repLabelElId){
@@ -1150,6 +1294,23 @@ function renderWarehouseList(){
 }
 function selectWarehouse(w){ state.warehouse = w; render(); }
 
+function renderTierList(){
+  document.getElementById('fTierPanel').style.display = HAS_TIER ? '' : 'none';
+  if(!HAS_TIER) return;
+  const allRow = `<div class="bdm-item ${!state.tier?'active':''}" onclick="selectTier('')">All Sell Price Tiers</div>`;
+  const rows = ALL_TIERS.map(t => `<div class="bdm-item ${state.tier===t?'active':''}" onclick="selectTier('${t.replace(/'/g,"\\'")}')">${esc(t)}</div>`).join('');
+  document.getElementById('fTierList').innerHTML = allRow + rows;
+}
+function selectTier(t){ state.tier = t; render(); }
+function renderPayList(){
+  document.getElementById('fPayPanel').style.display = HAS_PAY ? '' : 'none';
+  if(!HAS_PAY) return;
+  const allRow = `<div class="bdm-item ${!state.pay?'active':''}" onclick="selectPay('')">All Payment Modes</div>`;
+  const rows = ALL_PAYS.map(p => `<div class="bdm-item ${state.pay===p?'active':''}" onclick="selectPay('${p.replace(/'/g,"\\'")}')">${esc(p)}</div>`).join('');
+  document.getElementById('fPayList').innerHTML = allRow + rows;
+}
+function selectPay(p){ state.pay = p; render(); }
+
 const DATE_RANGE_OPTIONS = ['all','this_week','this_month','last_month','custom'];
 function renderDateList(){
   document.getElementById('fDateList').innerHTML = DATE_RANGE_OPTIONS.map(k => `<div class="bdm-item ${state.dateRange===k?'active':''}" onclick="selectDateRange('${k}')">${DATE_RANGE_LABEL[k]}${k==='custom'?'…':''}</div>`).join('');
@@ -1175,6 +1336,8 @@ function render(){
   renderFilterRepList();
   renderTypeList();
   renderWarehouseList();
+  renderTierList();
+  renderPayList();
   renderDateList();
 
   document.getElementById('pageSubtitle').textContent = state.page === 'dashboard'
@@ -1235,6 +1398,11 @@ const HEADER_ALIASES = {
   'status': 'status',
   'quantity': 'quantity',
   'sub total': 'sub_total',
+  // Optional — only used when the export (or Mark's Unleashed / Shopify feed) includes them.
+  'payment mode': 'payment_mode',
+  'payment method': 'payment_mode',
+  'sell price tier': 'sell_price_tier',
+  'price tier': 'sell_price_tier',
 };
 function normHeader(s){ return (s||'').toString().trim().toLowerCase().replace(/\.+$/,''); }
 
@@ -1294,6 +1462,10 @@ function parseSheetRows(sheetRows){
       status: colMap.status != null ? (row[colMap.status] ?? null) : null,
       quantity: colMap.quantity != null ? Number(row[colMap.quantity]) || 0 : 0,
       sub_total: colMap.sub_total != null ? Number(row[colMap.sub_total]) || 0 : 0,
+      // Only sent when the file has these columns, so a plain Unleashed export still imports
+      // cleanly into a table that doesn't have them yet.
+      ...(colMap.payment_mode != null ? { payment_mode: cleanVal(row[colMap.payment_mode]) || null } : {}),
+      ...(colMap.sell_price_tier != null ? { sell_price_tier: cleanVal(row[colMap.sell_price_tier]) || null } : {}),
     });
   }
   return out;
@@ -1310,6 +1482,9 @@ async function insertBatch(rows, batchId){
     });
     if(!res.ok){
       const body = await res.text().catch(()=> '');
+      if(/payment_mode|sell_price_tier/.test(body)){
+        throw new Error('This file has Payment Mode / Sell Price Tier columns, but the database does not have them yet. Ask Mark to add the two columns (payment_mode, sell_price_tier) to sales_order_lines, then import again.');
+      }
       throw new Error(`Import failed on rows ${i+1}-${i+chunk.length} (${res.status}): ${body.slice(0,200)}`);
     }
   }
