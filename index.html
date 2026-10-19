@@ -643,16 +643,16 @@ function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&
    Shopify). Both arrive as optional columns on sales_order_lines; until the feed
    fills them every cell shows "—" and the filters stay hidden. */
 function cleanVal(v){ return v == null ? '' : String(v).trim(); }
+const NO_PAY = 'Non-Shopify'; // Payment Mode comes from Shopify, so orders with none are non-Shopify orders
 let HAS_TIER = false, HAS_PAY = false;
 let ALL_TIERS = [], ALL_PAYS = [];
 function tierTag(t){ return t ? `<span class="tag tag-tier">${esc(t)}</span>` : '<span class="tag-none">—</span>'; }
-function payTag(p){ return p ? `<span class="tag tag-pay">${esc(p)}</span>` : '<span class="tag-none">—</span>'; }
-// Account-level payment cell: latest mode used, "+N" when other modes were also used.
+function payTag(p){ return p ? `<span class="tag tag-pay">${esc(p)}</span>` : `<span class="tag-none">${HAS_PAY ? NO_PAY : '—'}</span>`; }
+// Account-level payment cell: one tag per mode the account has used (Card / Cash), most orders first.
 function payTagsHTML(a){
-  if(!a.payment) return '<span class="tag-none">—</span>';
-  const extra = a.payModes.length - 1;
+  if(!a.payment) return `<span class="tag-none">${HAS_PAY ? NO_PAY : '—'}</span>`;
   const tip = a.payModes.map(m => `${m.mode} (${m.orders} order${m.orders===1?'':'s'})`).join(', ');
-  return `<span class="tag-wrap" title="${esc(tip)}"><span class="tag tag-pay">${esc(a.payment)}</span>${extra>0?`<span class="tag tag-more">+${extra}</span>`:''}</span>`;
+  return `<span class="tag-wrap" title="${esc(tip)}">${a.payModes.map(m => `<span class="tag tag-pay">${esc(m.mode)}</span>`).join('')}</span>`;
 }
 
 // Lines whose "Product Code" is really a delivery / installation-service / credit-adjustment
@@ -706,7 +706,7 @@ function rebuildFromLines(){
   HAS_PAY = LINES.some(l => cleanVal(l.payment_mode));
   const natural = (a,b) => a.localeCompare(b, undefined, {numeric:true, sensitivity:'base'});
   ALL_TIERS = HAS_TIER ? [...new Set(LINES.map(l => cleanVal(l.sell_price_tier) || 'Unspecified'))].sort((a,b) => a==='Unspecified'?1:b==='Unspecified'?-1:natural(a,b)) : [];
-  ALL_PAYS = HAS_PAY ? [...new Set(LINES.map(l => cleanVal(l.payment_mode) || 'Unspecified'))].sort((a,b) => a==='Unspecified'?1:b==='Unspecified'?-1:natural(a,b)) : [];
+  ALL_PAYS = HAS_PAY ? [...new Set(LINES.map(l => cleanVal(l.payment_mode) || NO_PAY))].sort((a,b) => a===NO_PAY?1:b===NO_PAY?-1:natural(a,b)) : [];
 
   // The BDM picker on the Dashboard page and the "Sales Rep" filter used by
   // every other page are the same underlying selection (state.rep). On first
@@ -763,7 +763,7 @@ function filteredLines(){
     if(state.type && (l.customer_type || 'Unspecified') !== state.type) return false;
     if(state.warehouse && (l.warehouse || 'Unspecified') !== state.warehouse) return false;
     if(state.tier && (cleanVal(l.sell_price_tier) || 'Unspecified') !== state.tier) return false;
-    if(state.pay && (cleanVal(l.payment_mode) || 'Unspecified') !== state.pay) return false;
+    if(state.pay && (cleanVal(l.payment_mode) || NO_PAY) !== state.pay) return false;
     if(rangeStart || rangeEnd){
       const d = l.completed_date ? new Date(l.completed_date) : null;
       if(!d) return false;
@@ -1173,7 +1173,7 @@ function renderMixCharts(lines, accounts){
   if(HAS_PAY){
     const m = new Map();
     for(const l of lines){
-      const k = cleanVal(l.payment_mode) || 'Unspecified';
+      const k = cleanVal(l.payment_mode) || NO_PAY;
       if(!m.has(k)) m.set(k, {label:k, revenue:0, orders:new Set()});
       const r = m.get(k); r.revenue += (l.sub_total||0); r.orders.add(l.order_no);
     }
