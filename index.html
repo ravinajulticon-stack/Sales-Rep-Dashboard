@@ -643,7 +643,7 @@ function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&
    Shopify). Both arrive as optional columns on sales_order_lines; until the feed
    fills them every cell shows "—" and the filters stay hidden. */
 function cleanVal(v){ return v == null ? '' : String(v).trim(); }
-const NO_PAY = 'Non-Shopify'; // Payment Mode comes from Shopify, so orders with none are non-Shopify orders
+const NO_PAY = 'Unspecified'; // A blank payment mode means it could not be read from Shopify. It does NOT mean a non-Shopify order: manual SO- orders come through as Cash.
 let HAS_TIER = false, HAS_PAY = false;
 let ALL_TIERS = [], ALL_PAYS = [];
 function tierTag(t){ return t ? `<span class="tag tag-tier">${esc(t)}</span>` : '<span class="tag-none">—</span>'; }
