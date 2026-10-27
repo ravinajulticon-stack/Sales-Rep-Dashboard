@@ -445,6 +445,8 @@
   @media (max-width:1000px){ .kpis{flex-wrap:wrap;} .kpis .kpi{flex:1 1 45%;border-bottom:1px solid #eceef2;} }
   .card, .stat-card, .kpi{border-color:#eceef2;}
   .tag-tier + .tag-wrap::before{content:"\00b7";margin:0 6px;color:var(--ink-muted);}
+  .kv small{text-transform:none;letter-spacing:0;font-size:12px;font-weight:600;color:var(--ink-secondary);}
+  .drawer .sec, .mini-kpis small{text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:600;}
 </style>
 </head>
 <body>
@@ -798,9 +800,9 @@ function drawerHTML(id){
   const pm = new Map(); S.L.filter(l => dnum(l.d) >= dnum(ASOF)-364).forEach(l => { const k = l.p || '(No Code)'; pm.set(k, (pm.get(k)||0) + l.q); });
   const pr = [...pm].filter(x => x[1] > 0).sort((x,y) => y[1]-x[1]).slice(0,5).map(([k,q]) => `<tr><td>${esc(k)}</td><td class="num">${plural(q,'Unit')}</td></tr>`).join('') || '<tr class="empty-row"><td colspan="2">No products in the last 12 months.</td></tr>';
   return `<div class="scrim" data-close="1"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="${esc(a.company)}">
-    <div style="display:flex;justify-content:space-between;align-items:center"><span class="muted" style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Account</span><button type="button" class="xbtn" data-close="1" aria-label="Close">×</button></div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><span class="muted" style="font-size:12.5px;font-weight:600">Account</span><button type="button" class="xbtn" data-close="1" aria-label="Close">×</button></div>
     <h2>${esc(a.company)}</h2><div class="muted" style="font-size:12.5px">Customer Code: ${esc(a.code)}</div>
-    <div class="meta">${chip(S.status)}${tierTag(a.tier)}${payTags(a)}<span class="chip gry">Rep: ${esc(a.bdm)}</span></div>
+    <div class="meta">${chip(S.status)}${a.tier ? tierTag(a.tier) : ''}${a.pays.size ? payTags(a) : ''}<span class="chip gry">Rep: ${esc(a.bdm)}</span></div>
     <div class="mini-kpis"><div><small>${state.period==='fytd'?'Sales This FY':'Sales, 12 Months'}</small><strong>${$$(S.cur)}</strong></div><div><small>Vs Last Year</small><strong>${delta(S.cur,S.ly)}</strong></div><div><small>Last Order</small><strong>${S.last ? esc(agoText(S.days)) : 'Never'}</strong></div></div>
     <div class="sec">Monthly Sales, Last 12 Months</div>${chart}
     <div class="sec">Latest Orders</div><table class="tbl-compact"><tbody>${od}</tbody></table>
