@@ -51,6 +51,7 @@
   .nav-item:hover{color:#fff; background:rgba(255,255,255,.06);}
   .nav-item.active{color:var(--sidebar-text-active); background:var(--sidebar-active-bg);}
   .nav-divider{border-top:1px solid rgba(255,255,255,.09); margin:14px 4px;}
+  .navgrp{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:#5f6e8f; font-weight:700; padding:16px 12px 4px;}
   .nav-footer{margin-top:auto; display:flex; flex-direction:column; gap:2px;}
 
   .app{margin-left:var(--sidebar-w);}
@@ -716,7 +717,9 @@ document.addEventListener('mousemove', e => {
 });
 document.addEventListener('change', e => {
   const f = e.target.dataset && e.target.dataset.f; if(!f) return;
-  state[f] = e.target.value; render();
+  state[f] = e.target.value;
+  if(f === 'rep'){ try{ localStorage.setItem('ddl_home_rep', state.rep); }catch(_){} }   // shared with Rep Home and the dashboard
+  render();
 });
 function activate(el){
   if(el.dataset.gran){ state.gran = el.dataset.gran; render(); }
@@ -735,6 +738,7 @@ async function start(){
   document.getElementById('authOverlay').setAttribute('hidden','');
   const hm = /^#trend=(.+)$/.exec(location.hash);        // deep link from the Home page: history.html#trend=<customer code>
   if(hm){ let c = ''; try{ c = decodeURIComponent(hm[1]); }catch(_){} const a = BY_CODE.get(c.toLowerCase()); if(a){ state.tab = 'trend'; state.acct = a.id; } }
+  try{ const r = localStorage.getItem('ddl_home_rep'); if(r && ACCTS.some(a => a.bdm === r)) state.rep = r; }catch(_){}
   render();
   try { mergeLive(await fetchLive()); LIVE_OK = true; } catch(err){ console.error(err); LIVE_OK = false; }
   setAnchor(); renderPill(); render();
