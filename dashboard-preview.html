@@ -304,6 +304,45 @@
   .dash-layout > *, .two-col > *, .mix-row > *{min-width:0;}
   #acctBody td:nth-child(2), #orderBody tr[data-order] td:nth-child(3), #dashAcctBody td:first-child{white-space:normal;min-width:170px;max-width:280px;line-height:1.35;}
 
+  /* ================= Focused look (Option B) ================= */
+  /* fewer colours: no icon squares, one bar colour, plain-text tier / payment */
+  .stat-icon{display:none;}
+  .stat-label{text-transform:none;letter-spacing:0;font-size:12.5px;color:var(--ink-secondary);}
+  .stat-sub{color:var(--ink-muted);}
+  .chart-fill{background:#4f8fdc !important;}
+  .chart-track{height:8px;background:#f0f2f5;}
+  .chart-value-sub{display:none;}
+  .tag{background:none !important;padding:0;font-weight:500;color:var(--ink-secondary) !important;}
+  .tag-wrap{gap:0 !important;}
+  .tag-wrap .tag + .tag::before{content:"\00b7";margin:0 6px;color:var(--ink-muted);}
+  .acct-selected-chips .tag{font-size:12.5px;}
+  /* quieter tables */
+  th.sortable .arrow{opacity:0 !important;}
+  th.sortable:hover .arrow, th.sortable.active .arrow{opacity:1 !important;}
+  thead th{text-transform:none;letter-spacing:0;font-size:12px;color:var(--ink-secondary);font-weight:600;}
+  tbody td{border-bottom-color:#f1f3f6;}
+  .rep-name{font-weight:500;}
+  .card, .stat-card, .fbar, .bdm-panel{border-color:#eceef2;}
+  .card-head .count{color:#a3abb8;}
+  .note{border-style:solid;border-color:#eceef2;background:transparent;}
+  .fctl small{text-transform:none;letter-spacing:0;font-size:11.5px;font-weight:600;}
+  /* filter bar: Sales Rep, Date and Search up front; the rest behind "More Filters" */
+  .fbar .fctl{flex:0 1 220px;}
+  .fbar .fsearch{flex:1 1 260px;}
+  .fbar .fsec{flex:1 1 160px;display:none;}
+  .fbar.show-more .fsec{display:flex;}
+  .fbreak{flex-basis:100%;height:0;}
+  .fbar:not(.show-more) .fbreak{display:none;}
+  .more-btn{align-self:flex-end;white-space:nowrap;padding:8px 13px;}
+  /* KPI cards become one strip */
+  .stats, .dash-stats{display:flex !important;gap:0 !important;background:var(--surface-card);border:1px solid #eceef2;border-radius:var(--radius);overflow:hidden;}
+  .stats .stat-card, .dash-stats .stat-card{border:none;border-radius:0;flex:1;min-width:0;border-right:1px solid #eceef2;}
+  .stats .stat-card:last-child, .dash-stats .stat-card:last-child{border-right:none;}
+  @media (max-width:1000px){ .stats, .dash-stats{flex-wrap:wrap;} .stats .stat-card, .dash-stats .stat-card{flex:1 1 45%;border-bottom:1px solid #eceef2;} }
+  /* the table heading already names the rep, so drop the repeat above the KPI strip */
+  .dash-main-head{display:none;}
+  .acct-selected-label, .chip-pair, .bdm-panel-title{text-transform:none;letter-spacing:0;font-size:12.5px;}
+
 </style>
 </head>
 <body>
@@ -408,11 +447,13 @@
         <label class="fctl"><small>From</small><input type="date" id="fbStart" aria-label="From date" /></label>
         <label class="fctl"><small>To</small><input type="date" id="fbEnd" aria-label="To date" /></label>
       </span>
-      <label class="fctl"><small>Warehouse</small><select id="fbWh" aria-label="Warehouse"></select></label>
-      <label class="fctl" id="fbPayWrap"><small>Payment Mode</small><select id="fbPay" aria-label="Payment mode"></select></label>
-      <label class="fctl"><small>Customer Type</small><select id="fbType" aria-label="Customer type"></select></label>
-      <label class="fctl" id="fbTierWrap"><small>Sell Price Tier</small><select id="fbTier" aria-label="Sell price tier"></select></label>
       <label class="fctl fsearch"><small>Search</small><input type="search" id="fbSearch" placeholder="Customer, order no. or SKU" autocomplete="off" /></label>
+      <button type="button" class="btn more-btn" id="fbMoreBtn" aria-expanded="false">More Filters</button>
+      <span class="fbreak"></span>
+      <label class="fctl fsec"><small>Warehouse</small><select id="fbWh" aria-label="Warehouse"></select></label>
+      <label class="fctl fsec" id="fbPayWrap"><small>Payment Mode</small><select id="fbPay" aria-label="Payment mode"></select></label>
+      <label class="fctl fsec"><small>Customer Type</small><select id="fbType" aria-label="Customer type"></select></label>
+      <label class="fctl fsec" id="fbTierWrap"><small>Sell Price Tier</small><select id="fbTier" aria-label="Sell price tier"></select></label>
     </div>
     <div class="chips" id="fbChips"></div>
 
@@ -487,11 +528,9 @@
             <tr>
               <th class="sortable" data-sort="rep" onclick="sortAccount('rep')">Sales Rep <span class="arrow">↕</span></th>
               <th class="sortable" data-sort="customer" onclick="sortAccount('customer')">Customer <span class="arrow">↕</span></th>
-              <th>Customer Type</th>
               <th class="sortable" data-sort="tier" onclick="sortAccount('tier')">Sell Price Tier <span class="arrow">↕</span></th>
               <th class="sortable" data-sort="payment" onclick="sortAccount('payment')">Payment Mode <span class="arrow">↕</span></th>
               <th class="num sortable" data-sort="orders" onclick="sortAccount('orders')">Orders <span class="arrow">↕</span></th>
-              <th class="num sortable" data-sort="qty" onclick="sortAccount('qty')">Total Qty <span class="arrow">↕</span></th>
               <th class="num sortable active" data-sort="revenue" onclick="sortAccount('revenue')">Total Revenue <span class="arrow">↕</span></th>
               <th class="sortable" data-sort="last" onclick="sortAccount('last')">Last Order Date <span class="arrow">↕</span></th>
               <th></th>
@@ -501,16 +540,6 @@
         </table>
         </div>
         <div class="pager" id="acctPager"></div>
-      </div>
-      <div class="mix-row compact" id="mixRow" style="display:none">
-        <div class="card" id="tierCard">
-          <div class="card-head"><h2>Revenue by Sell Price Tier</h2><span class="count" id="tierChartCount"></span></div>
-          <div class="chart-card"><div id="tierChart"></div></div>
-        </div>
-        <div class="card" id="payCard">
-          <div class="card-head"><h2>Revenue by Payment Mode</h2><span class="count" id="payChartCount"></span></div>
-          <div class="chart-card"><div id="payChart"></div></div>
-        </div>
       </div>
     </div>
 
@@ -529,7 +558,6 @@
               <th class="sortable" data-sort="rep" onclick="sortOrder('rep')">Sales Rep <span class="arrow">↕</span></th>
               <th class="sortable active" data-sort="date" onclick="sortOrder('date')">Completed Date <span class="arrow">↕</span></th>
               <th>Products</th>
-              <th>Warehouse</th>
               <th class="sortable" data-sort="payment" onclick="sortOrder('payment')">Payment Mode <span class="arrow">↕</span></th>
               <th class="num sortable" data-sort="qty" onclick="sortOrder('qty')">Qty <span class="arrow">↕</span></th>
               <th class="num sortable" data-sort="revenue" onclick="sortOrder('revenue')">Sub Total <span class="arrow">↕</span></th>
@@ -587,6 +615,16 @@
       <div class="card">
         <div class="card-head"><h2>Top Products (All Reps)</h2><span class="count" id="productChart2Count"></span></div>
         <div class="chart-card"><div class="chart-scroll" id="productChart2"></div></div>
+      </div>
+      <div class="mix-row compact" id="mixRow" style="display:none">
+        <div class="card" id="tierCard">
+          <div class="card-head"><h2>Revenue by Sell Price Tier</h2><span class="count" id="tierChartCount"></span></div>
+          <div class="chart-card"><div id="tierChart"></div></div>
+        </div>
+        <div class="card" id="payCard">
+          <div class="card-head"><h2>Revenue by Payment Mode</h2><span class="count" id="payChartCount"></span></div>
+          <div class="chart-card"><div id="payChart"></div></div>
+        </div>
       </div>
     </div>
 
@@ -1209,7 +1247,7 @@ function renderAcctChart(accounts, elId, countElId){
     if(!byCust.has(a.customer)) byCust.set(a.customer, 0);
     byCust.set(a.customer, byCust.get(a.customer) + a.revenue);
   }
-  const rows = [...byCust.entries()].map(([customer,revenue]) => ({customer,revenue})).sort((a,b) => b.revenue - a.revenue).slice(0,8);
+  const rows = [...byCust.entries()].map(([customer,revenue]) => ({customer,revenue})).sort((a,b) => b.revenue - a.revenue).slice(0, elId === 'acctChart' ? 5 : 8);
   const max = rows.length ? rows[0].revenue : 1;
   document.getElementById(countElId).textContent = 'top ' + rows.length + ' of ' + byCust.size;
   document.getElementById(elId).innerHTML = rows.map(r => `
@@ -1234,19 +1272,16 @@ function renderAccountsPage(lines, accounts){
     <tr class="clickable" data-cust="${esc(a.customer)}" title="Open this account's orders">
       <td><span class="rep-dot" style="background:${REP_COLOR[a.repKey]}"></span><span class="rep-name">${esc(a.rep)}</span></td>
       <td>${esc(a.customer)}</td>
-      <td>${esc(a.customer_type)}</td>
       <td>${tierTag(a.tier)}</td>
       <td>${payTagsHTML(a)}</td>
       <td class="num">${a.orders}</td>
-      <td class="num">${a.qty}</td>
       <td class="num">${fmtMoney(a.revenue)}</td>
       <td>${fmtDateOnly(a.last)}</td>
       <td><span class="row-chevron">›</span></td>
     </tr>
-  `).join('') : '<tr class="empty-row"><td colspan="10">No accounts match the current filters.</td></tr>';
+  `).join('') : '<tr class="empty-row"><td colspan="8">No accounts match the current filters.</td></tr>';
   document.getElementById('acctPager').innerHTML = pagerHTML('accounts', p, 'account');
   renderFeedNote();
-  renderMixCharts(lines, accounts);
 }
 
 // Tells the viewer (once, plainly) when Sell Price Tier / Payment Mode haven't started
@@ -1338,7 +1373,6 @@ function renderOrdersPage(orders, lines){
       <td><span class="rep-dot" style="background:${REP_COLOR[o.repKey]}"></span>${esc(o.rep)}</td>
       <td>${fmtDate(o.date)}</td>
       <td>${skuCell(o.products)}</td>
-      <td>${esc(o.warehouse)}</td>
       <td>${payTag(o.payment)}</td>
       <td class="num">${o.qty}</td>
       <td class="num">${fmtMoney(o.revenue)}</td>
@@ -1346,14 +1380,14 @@ function renderOrdersPage(orders, lines){
     if(!open) return main;
     const ol = byOrder.get(o.order_no) || [];
     return main + `
-    <tr class="order-detail"><td colspan="10">
-      <div class="od-meta"><span>Customer Type: <b>${esc(o.customer_type)}</b></span><span>Status: <b>${esc(o.status || 'Completed')}</b></span><span>Lines: <b>${o.items}</b></span></div>
+    <tr class="order-detail"><td colspan="9">
+      <div class="od-meta"><span>Warehouse: <b>${esc(o.warehouse)}</b></span><span>Customer Type: <b>${esc(o.customer_type)}</b></span><span>Status: <b>${esc(o.status || 'Completed')}</b></span><span>Lines: <b>${o.items}</b></span></div>
       <table class="od-lines">
         <thead><tr><th>SKU</th><th>SKU Name</th><th class="num">Qty</th><th class="num">Sub Total</th></tr></thead>
         <tbody>${ol.map(l => `<tr><td>${esc(l.product_code || '—')}</td><td>${esc(skuName(l.product_code))}</td><td class="num">${l.quantity || 0}</td><td class="num">${fmtMoney(l.sub_total)}</td></tr>`).join('')}</tbody>
       </table>
     </td></tr>`;
-  }).join('') : '<tr class="empty-row"><td colspan="10">No orders match the current filters.</td></tr>';
+  }).join('') : '<tr class="empty-row"><td colspan="9">No orders match the current filters.</td></tr>';
   document.getElementById('orderPager').innerHTML = pagerHTML('orders', p, 'order');
 }
 
@@ -1413,6 +1447,7 @@ function renderReportsPage(lines, accounts, products){
   renderRepChart(accounts, 'repChart2', 'repChart2Count');
   renderAcctChart(accounts, 'acctChart2', 'acctChart2Count');
   renderProductChart(products, 'productChart2', 'productChart2Count', null);
+  renderMixCharts(lines, accounts);
 }
 
 /* ------------------------------------------------------------------ */
@@ -1533,6 +1568,11 @@ function optionsHTML(allLabel, values, current, labelFn){
     `<option value="${esc(v)}"${v === current ? ' selected' : ''}>${esc(labelFn ? labelFn(v) : v)}</option>`).join('');
 }
 function renderFilterBar(){
+  const nSec = [state.warehouse, state.pay, state.type, state.tier].filter(Boolean).length;
+  const mb = document.getElementById('fbMoreBtn');
+  mb.textContent = (state.moreFilters ? 'Fewer Filters' : 'More Filters') + (nSec ? ' (' + nSec + ' on)' : '');
+  mb.setAttribute('aria-expanded', String(!!state.moreFilters));
+  document.getElementById('fbar').classList.toggle('show-more', !!state.moreFilters);
   document.getElementById('fbRep').innerHTML = optionsHTML('All Sales Reps', ALL_REP_KEYS, state.rep, k => k === NO_REP ? 'No Rep Assigned' : k);
   document.getElementById('fbDate').innerHTML = DATE_RANGE_OPTIONS.map(k => `<option value="${k}"${state.dateRange === k ? ' selected' : ''}>${DATE_RANGE_LABEL[k]}</option>`).join('');
   document.getElementById('fbWh').innerHTML = optionsHTML('All Warehouses', ALL_WAREHOUSES, state.warehouse);
@@ -1596,6 +1636,7 @@ function openAccountOrders(customer){
     render();
   });
 });
+document.getElementById('fbMoreBtn').addEventListener('click', () => { state.moreFilters = !state.moreFilters; renderFilterBar(); });
 document.getElementById('fbSearch').addEventListener('input', e => { state.search = e.target.value; resetPaging(); render(); });
 document.getElementById('fbStart').addEventListener('change', e => { state.customStart = e.target.value; resetPaging(); render(); });
 document.getElementById('fbEnd').addEventListener('change', e => { state.customEnd = e.target.value; resetPaging(); render(); });
