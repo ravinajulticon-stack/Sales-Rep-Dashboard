@@ -521,10 +521,10 @@ function agg(lines, m0, m1){
   const r = {rev:0, units:0, orders:new Set(), byAcct:new Map(), byProd:new Map(), byType:new Map(), byAcctOrders:new Map()};
   for(const l of lines){
     if(l.mi<m0 || l.mi>m1) continue;
-    r.rev += l.s; r.units += l.q; r.orders.add(l.o);
+    r.rev += l.s; if(l.p) r.units += l.q; r.orders.add(l.o);
     r.byAcct.set(l.a, (r.byAcct.get(l.a)||0) + l.s);
     if(!r.byAcctOrders.has(l.a)) r.byAcctOrders.set(l.a, new Set()); r.byAcctOrders.get(l.a).add(l.o);
-    const pk = l.p || '(No Code)'; const p = r.byProd.get(pk) || {u:0,s:0}; p.u += l.q; p.s += l.s; r.byProd.set(pk, p);
+    if(l.p){ const p = r.byProd.get(l.p) || {u:0,s:0}; p.u += l.q; p.s += l.s; r.byProd.set(l.p, p); }   // lines with no product code are Shopify delivery charges: revenue yes, product/unit counts no
     r.byType.set(l.t, (r.byType.get(l.t)||0) + l.s);
   }
   r.active = [...r.byAcct.values()].filter(v => v>0).length;
@@ -771,7 +771,7 @@ function renderTrend(){
     for(let e = ANCHOR; e >= ANCHOR-9; e--){ const c = agg(al, e-2, e).rev, o = agg(al, e-14, e-12).rev, d = c-o; if(d < 0 && (!worst || d < worst.d)) worst = {d, e}; }
     const bars = barChart({vals:v, colors:v.map((_,i) => i<12 ? '#c9d1de' : '#2a78d6'), h:240, w:700, label:'Monthly revenue for the selected account',
       xl:v.map((_,i) => i%3===0 ? {i, t:miShort(ANCHOR-23+i)} : null).filter(Boolean), tip: i => `${miLabel(ANCHOR-23+i)}\nRevenue: ${$$(v[i])}`});
-    const prodMap = new Map(); al.filter(l => l.mi>=ANCHOR-11).forEach(l => prodMap.set(l.p||'(No Code)', (prodMap.get(l.p||'(No Code)')||0) + l.q));
+    const prodMap = new Map(); al.filter(l => l.mi>=ANCHOR-11 && l.p).forEach(l => prodMap.set(l.p, (prodMap.get(l.p)||0) + l.q));
     const prods = [...prodMap].sort((a,b) => b[1]-a[1]).slice(0,5).map(([k,q]) => `<tr><td><span class="rep-name">${esc(k)}</span></td><td class="num">${q}</td></tr>`).join('') || '<tr class="empty-row"><td colspan="2">No orders in the last 12 months.</td></tr>';
     detail = `<p class="acct-selected-label">Account Selected</p><p class="acct-selected-name">${esc(sel.a.company)}</p>
       <div class="acct-selected-chips"><span class="chip-pair">Sell Price Tier ${tierTag(sel.a.tier)}</span><span class="chip-pair">Payment Mode ${payTags(sel.a)}</span><span class="chip-pair">Current Sales Rep <b>${esc(sel.a.bdm)}</b></span></div>
@@ -834,7 +834,7 @@ function render(){
   document.getElementById('pageSub').textContent = TITLES[state.tab].s;
   document.querySelectorAll('.tab[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab===state.tab));
   const body = state.tab==='history' ? renderHistory() : state.tab==='changed' ? renderChanged() : renderTrend();
-  const foot = `<p class="mini-note">Amounts are the Sub Total from the Unleashed Sales Enquiry. Jul 2020 – Jun 2026 comes from the FY2021 – FY2026 exports; Jul 2026 onward is the live feed. The current month is left out until it is complete. Accounts are matched on customer code, so a customer who orders under a contact&#39;s name still counts toward the company.</p>`;
+  const foot = `<p class="mini-note">Amounts are the Sub Total from the Unleashed Sales Enquiry. Jul 2020 – Jun 2026 comes from the FY2021 – FY2026 exports; Jul 2026 onward is the live feed. The current month is left out until it is complete. Accounts are matched on customer code, so a customer who orders under a contact&#39;s name still counts toward the company. Lines with no product code (Delivery / Other, mostly Shopify delivery charges) count in revenue but not in product or unit figures.</p>`;
   const warn = LIVE_OK ? '' : `<div class="note">The live feed could not be reached, so this page only shows history up to ${esc(ddmmyyyy(HIST.through))}. Reload to try again.</div>`;
   document.getElementById('root').innerHTML = warn + body + foot;
 }
