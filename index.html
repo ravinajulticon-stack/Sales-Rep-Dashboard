@@ -342,6 +342,10 @@
   /* the table heading already names the rep, so drop the repeat above the KPI strip */
   .dash-main-head{display:none;}
   .acct-selected-label, .chip-pair, .bdm-panel-title{text-transform:none;letter-spacing:0;font-size:12.5px;}
+  .fchk .chkline{display:flex;align-items:center;gap:7px;height:33px;font-size:13px;color:var(--ink-primary);cursor:pointer;white-space:nowrap;}
+  .fchk input{width:auto;margin:0;cursor:pointer;}
+  /* keep the SKU name next to the code in product bars */
+  .chart-label .chart-value-sub{display:inline;margin-left:8px;}
 
 </style>
 </head>
@@ -407,10 +411,6 @@
   </div>
   <div class="nav-footer">
     <div class="nav-divider"></div>
-    <button class="nav-item" onclick="openFilters()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16M7 12h10M10 19h4"/></svg>
-      Filters
-    </button>
     <button class="nav-item" onclick="signOut()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
       Sign Out
@@ -450,6 +450,7 @@
       <label class="fctl fsec" id="fbPayWrap"><small>Payment Mode</small><select id="fbPay" aria-label="Payment mode"></select></label>
       <label class="fctl fsec"><small>Customer Type</small><select id="fbType" aria-label="Customer type"></select></label>
       <label class="fctl fsec" id="fbTierWrap"><small>Sell Price Tier</small><select id="fbTier" aria-label="Sell price tier"></select></label>
+      <label class="fctl fsec fchk"><small>Products / SKUs</small><span class="chkline"><input type="checkbox" id="fbProd" /> Product Lines Only</span></label>
     </div>
     <div class="chips" id="fbChips"></div>
 
@@ -1564,7 +1565,7 @@ function optionsHTML(allLabel, values, current, labelFn){
     `<option value="${esc(v)}"${v === current ? ' selected' : ''}>${esc(labelFn ? labelFn(v) : v)}</option>`).join('');
 }
 function renderFilterBar(){
-  const nSec = [state.warehouse, state.pay, state.type, state.tier].filter(Boolean).length;
+  const nSec = [state.warehouse, state.pay, state.type, state.tier, state.productLinesOnly].filter(Boolean).length;
   const mb = document.getElementById('fbMoreBtn');
   mb.textContent = (state.moreFilters ? 'Fewer Filters' : 'More Filters') + (nSec ? ' (' + nSec + ' on)' : '');
   mb.setAttribute('aria-expanded', String(!!state.moreFilters));
@@ -1587,6 +1588,7 @@ function renderFilterBar(){
   document.getElementById('fCustomStart').value = state.customStart;
   document.getElementById('fCustomEnd').value = state.customEnd;
   document.getElementById('fProductOnly').checked = state.productLinesOnly;
+  document.getElementById('fbProd').checked = state.productLinesOnly;
   renderChips();
 }
 function renderChips(){
@@ -1632,6 +1634,7 @@ function openAccountOrders(customer){
     render();
   });
 });
+document.getElementById('fbProd').addEventListener('change', e => { state.productLinesOnly = e.target.checked; resetPaging(); render(); });
 document.getElementById('fbMoreBtn').addEventListener('click', () => { state.moreFilters = !state.moreFilters; renderFilterBar(); });
 document.getElementById('fbSearch').addEventListener('input', e => { state.search = e.target.value; resetPaging(); render(); });
 document.getElementById('fbStart').addEventListener('change', e => { state.customStart = e.target.value; resetPaging(); render(); });
@@ -1862,7 +1865,7 @@ async function sha256Hex(text){
 function applyHash(){
   const h = (location.hash || '').slice(1);
   if(['dashboard','accounts','orders','products','reports'].includes(h)){ if(h !== state.page) setPage(h); }
-  else if(h === 'filters'){ openFilters(); }
+  else if(h === 'filters'){ state.moreFilters = true; renderFilterBar(); }
 }
 window.addEventListener('hashchange', applyHash);
 
