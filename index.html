@@ -347,6 +347,42 @@
   /* keep the SKU name next to the code in product bars */
   .chart-label .chart-value-sub{display:inline;margin-left:8px;}
 
+  /* ===== Colours matched to the Philips MySmartLocks website (navy header, bright blue strip) ===== */
+  :root{
+    --brand:#0a4fe1; --brand-dark:#011389;
+    --ink-primary:#14123a; --ink-secondary:#48405f; --ink-muted:#898398;
+    --surface:#f4f5fa; --border:#e6e4ec;
+    --sidebar-bg:#010f60; --sidebar-text:#b9c1ee; --sidebar-text-active:#ffffff; --sidebar-active-bg:#0a4fe1;
+  }
+  body{background:var(--surface);color:var(--ink-primary);}
+  .sidebar{background:linear-gradient(180deg,#010f60 0%,#011389 60%,#0216b0 100%);}
+  .sidebar-logo{color:#fff;}
+  .nav-item{color:var(--sidebar-text);}
+  .nav-item:hover{color:#fff;background:rgba(255,255,255,.09);}
+  .nav-item.active{color:#fff;background:linear-gradient(90deg,#0a4fe1,#2b84eb);box-shadow:0 2px 10px rgba(10,79,225,.35);}
+  .navgrp{color:#8590d6;}
+  .nav-divider{border-top-color:rgba(255,255,255,.14);}
+  .app::before{content:"";display:block;height:4px;background:linear-gradient(90deg,#0a4fe1,#41b3f5);}
+  .btn-primary{background:linear-gradient(90deg,#0a4fe1,#2b84eb);border-color:#0a4fe1;color:#fff;}
+  .btn-primary:hover{background:linear-gradient(90deg,#0843c4,#1e6be6);}
+  .auth-btn{background:linear-gradient(90deg,#0a4fe1,#2b84eb);}
+  .auth-btn:hover{background:linear-gradient(90deg,#0843c4,#1e6be6);}
+  .auth-input-wrap input:focus{border-color:#0a4fe1;}
+  .card, .stat-card, .kpi, .fbar, .bdm-panel, .kpis, .stats, .dash-stats{border-color:#e6e4ec !important;}
+  .chart-fill{background:#2577e9 !important;}
+  .fchip{background:#e7eefc;color:#011389;}
+  .fchip small{color:#4d64b8;}
+  .fchip button{background:rgba(1,19,137,.1);color:#011389;}
+  .chip-clear, .card-link{color:#0a4fe1;}
+  .tab.active{color:#0a4fe1;border-bottom-color:#0a4fe1;}
+  .fctl select:focus, .fctl input:focus{outline-color:#b6cbf7;border-color:#0a4fe1;}
+  .bdm-item.active{background:#e7eefc;color:#011389;}
+  tbody tr.row-selected, tr.row-open{background:#e7eefc;}
+  tbody tr.clickable:hover{background:#f0f4fd;}
+  .seg button.on{background:#e7eefc;color:#011389;}
+  .acct-selected-name, .dash-main-head h2 b{color:#011389;}
+  th.sortable.active .arrow{color:#0a4fe1;}
+
 </style>
 </head>
 <body>

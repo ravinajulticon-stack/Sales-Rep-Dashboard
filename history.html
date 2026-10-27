@@ -12,7 +12,7 @@
     --surface:#f4f6fa;
     --surface-card:#ffffff;
     --border:#e4e7ec;
-    --brand:#2a78d6;
+    --brand:#1e6be6;
     --brand-dark:#1c5cab;
     --good:#0ca30c;
     --radius:12px;
@@ -22,7 +22,7 @@
     --sidebar-text-active:#ffffff;
     --sidebar-active-bg:#1c3f73;
     /* categorical slots — fixed order, never reassigned by filters */
-    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
+    --s1:#1e6be6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
     --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
   }
   *{box-sizing:border-box;}
@@ -367,6 +367,43 @@
   .tag-tier + .tag-wrap::before{content:"\00b7";margin:0 6px;color:var(--ink-muted);}
   .kv small{text-transform:none;letter-spacing:0;font-size:12px;font-weight:600;color:var(--ink-secondary);}
   .drawer .sec, .mini-kpis small{text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:600;}
+
+
+  /* ===== Colours matched to the Philips MySmartLocks website (navy header, bright blue strip) ===== */
+  :root{
+    --brand:#0a4fe1; --brand-dark:#011389;
+    --ink-primary:#14123a; --ink-secondary:#48405f; --ink-muted:#898398;
+    --surface:#f4f5fa; --border:#e6e4ec;
+    --sidebar-bg:#010f60; --sidebar-text:#b9c1ee; --sidebar-text-active:#ffffff; --sidebar-active-bg:#0a4fe1;
+  }
+  body{background:var(--surface);color:var(--ink-primary);}
+  .sidebar{background:linear-gradient(180deg,#010f60 0%,#011389 60%,#0216b0 100%);}
+  .sidebar-logo{color:#fff;}
+  .nav-item{color:var(--sidebar-text);}
+  .nav-item:hover{color:#fff;background:rgba(255,255,255,.09);}
+  .nav-item.active{color:#fff;background:linear-gradient(90deg,#0a4fe1,#2b84eb);box-shadow:0 2px 10px rgba(10,79,225,.35);}
+  .navgrp{color:#8590d6;}
+  .nav-divider{border-top-color:rgba(255,255,255,.14);}
+  .app::before{content:"";display:block;height:4px;background:linear-gradient(90deg,#0a4fe1,#41b3f5);}
+  .btn-primary{background:linear-gradient(90deg,#0a4fe1,#2b84eb);border-color:#0a4fe1;color:#fff;}
+  .btn-primary:hover{background:linear-gradient(90deg,#0843c4,#1e6be6);}
+  .auth-btn{background:linear-gradient(90deg,#0a4fe1,#2b84eb);}
+  .auth-btn:hover{background:linear-gradient(90deg,#0843c4,#1e6be6);}
+  .auth-input-wrap input:focus{border-color:#0a4fe1;}
+  .card, .stat-card, .kpi, .fbar, .bdm-panel, .kpis, .stats, .dash-stats{border-color:#e6e4ec !important;}
+  .chart-fill{background:#2577e9 !important;}
+  .fchip{background:#e7eefc;color:#011389;}
+  .fchip small{color:#4d64b8;}
+  .fchip button{background:rgba(1,19,137,.1);color:#011389;}
+  .chip-clear, .card-link{color:#0a4fe1;}
+  .tab.active{color:#0a4fe1;border-bottom-color:#0a4fe1;}
+  .fctl select:focus, .fctl input:focus{outline-color:#b6cbf7;border-color:#0a4fe1;}
+  .bdm-item.active{background:#e7eefc;color:#011389;}
+  tbody tr.row-selected, tr.row-open{background:#e7eefc;}
+  tbody tr.clickable:hover{background:#f0f4fd;}
+  .seg button.on{background:#e7eefc;color:#011389;}
+  .acct-selected-name, .dash-main-head h2 b{color:#011389;}
+  th.sortable.active .arrow{color:#0a4fe1;}
 </style>
 </head>
 <body>
@@ -619,7 +656,7 @@ function renderHistory(){
   const stats = stat('Revenue, Last 12 Months', $$(l12.rev), deltaHTML(l12.rev, p12.rev, 'vs prior 12 months'), ICON_MONEY,'#e6f7ec','#0ca30c')
     + stat('Orders, Last 12 Months', l12.orders.size.toLocaleString('en-AU'), deltaHTML(l12.orders.size, p12.orders.size, 'vs prior 12 months'), ICON_CART,'#f2eafd','#7a4ae0')
     + stat('Average Order Value', $$(aov(l12)), deltaHTML(aov(l12), aov(p12), 'vs prior 12 months'), ICON_MONEY,'#fdf0e2','#eb6834')
-    + stat('Active Accounts', l12.active, deltaHTML(l12.active, p12.active, 'vs prior 12 months'), ICON_B,'#e8f1fc','#2a78d6');
+    + stat('Active Accounts', l12.active, deltaHTML(l12.active, p12.active, 'vs prior 12 months'), ICON_B,'#e8f1fc','#1e6be6');
   const n = ANCHOR - FIRST_MI + 1, mv = monthly(L, FIRST_MI, ANCHOR);
   let main = '', mainTitle = '', legend = '';
   if(state.gran === 'M'){
@@ -627,36 +664,36 @@ function renderHistory(){
     const xl = []; for(let i=0;i<n;i++){ const mi = FIRST_MI+i; if(miMon(mi)===6 || miMon(mi)===0) xl.push({i, t: miShort(mi)}); }
     const cur3 = agg(L, ANCHOR-2, ANCHOR).rev, ly3 = agg(L, ANCHOR-14, ANCHOR-12).rev, pc = pctChange(cur3, ly3);
     const band = (pc !== null && pc <= -10) ? {a:n-3, b:n-1, label:`Down ${Math.abs(pc).toFixed(0)}% vs Same Months Last Year`} : null;
-    main = lineChart({n, label:'Monthly revenue', series:[{vals:mv, color:'#2a78d6', end:true},{vals:avg, color:'#8a93a3', dash:true}], xl, band,
+    main = lineChart({n, label:'Monthly revenue', series:[{vals:mv, color:'#1e6be6', end:true},{vals:avg, color:'#8a93a3', dash:true}], xl, band,
       tip: i => `${miLabel(FIRST_MI+i)}\nMonthly Revenue: ${$$(mv[i])}${avg[i]!=null?`\n12-Month Average: ${$$(avg[i])}`:''}`});
-    mainTitle = 'Monthly Revenue'; legend = '<span><i style="background:#2a78d6"></i>Monthly Revenue</span><span><i style="background:#8a93a3"></i>12-Month Average</span>';
+    mainTitle = 'Monthly Revenue'; legend = '<span><i style="background:#1e6be6"></i>Monthly Revenue</span><span><i style="background:#8a93a3"></i>12-Month Average</span>';
   } else {
     const size = state.gran === 'Q' ? 3 : 12, buckets = [];
     for(let s0 = fyStart(fyOf(FIRST_MI)); s0 <= ANCHOR; s0 += size){
       const e0 = Math.min(s0+size-1, ANCHOR), lab = state.gran==='Q' ? `Q${((s0-fyStart(fyOf(s0)))/3|0)+1} FY${String(fyOf(s0)).slice(2)}` : `FY${fyOf(s0)}`;
       buckets.push({lab, v:agg(L, s0, e0).rev, partial: (e0 - s0 + 1) < size, from:s0, to:e0});
     }
-    main = barChart({vals:buckets.map(b => b.v), colors:buckets.map(() => '#2a78d6'), partial:buckets.map(b => b.partial), label:'Revenue by period',
+    main = barChart({vals:buckets.map(b => b.v), colors:buckets.map(() => '#1e6be6'), partial:buckets.map(b => b.partial), label:'Revenue by period',
       xl:buckets.map((b,i) => ({i, t:b.lab})), tip: i => `${buckets[i].lab}${buckets[i].partial?' (To Date)':''}\n${rangeLabel(buckets[i].from, buckets[i].to)}\nRevenue: ${$$(buckets[i].v)}`});
     mainTitle = state.gran==='Q' ? 'Quarterly Revenue (Financial Year Quarters)' : 'Yearly Revenue (Financial Years)';
-    legend = '<span><i style="background:#2a78d6"></i>Revenue</span>' + (buckets.some(b => b.partial) ? '<span class="muted">Lighter Bar = Part Period</span>' : '');
+    legend = '<span><i style="background:#1e6be6"></i>Revenue</span>' + (buckets.some(b => b.partial) ? '<span class="muted">Lighter Bar = Part Period</span>' : '');
   }
   // this FY vs last FY (Jul – Jun)
   const fy = fyOf(ANCHOR), cs = fyStart(fy), ps = fyStart(fy-1);
   const cur = monthly(L, cs, ANCHOR), prev = monthly(L, ps, ps+11);
   const yoyXl = MON.slice(6).concat(MON.slice(0,6)).map((m,i) => ({i, t:m}));
   const yoy = lineChart({w:560, h:250, n:12, label:'This financial year versus last', xl:yoyXl,
-    series:[{vals:prev, color:'#9aa4b5'},{vals:Array.from({length:12},(_,i) => i<cur.length ? cur[i] : null), color:'#2a78d6', end:true}],
+    series:[{vals:prev, color:'#9aa4b5'},{vals:Array.from({length:12},(_,i) => i<cur.length ? cur[i] : null), color:'#1e6be6', end:true}],
     tip: i => `${yoyXl[i].t}\nFY${fy}: ${i<cur.length ? $$(cur[i]) : 'Not Yet'}\nFY${fy-1}: ${$$(prev[i])}`});
   const types = [...new Set([...l12.byType.keys(), ...p12.byType.keys()])].sort((a,b) => (l12.byType.get(b)||0)-(l12.byType.get(a)||0));
   const tmax = Math.max(1, ...types.flatMap(t => [l12.byType.get(t)||0, p12.byType.get(t)||0]));
   const trows = types.map(t => { const a = l12.byType.get(t)||0, p = p12.byType.get(t)||0;
-    return `<div class="rowbar" data-tip="${esc(`${t}\nLast 12 Months: ${$$(a)}\nPrior 12 Months: ${$$(p)}`)}"><div class="lab">${esc(t)}</div><div class="pair"><div style="top:0;width:${Math.max(p,0)/tmax*100}%;background:#c9d1de"></div><div style="top:11px;width:${Math.max(a,0)/tmax*100}%;background:#2a78d6"></div></div><div style="text-align:right;font-weight:700">${$$(a)} ${deltaHTML(a,p)}</div></div>`; }).join('') || '<p class="muted">No orders match these filters.</p>';
+    return `<div class="rowbar" data-tip="${esc(`${t}\nLast 12 Months: ${$$(a)}\nPrior 12 Months: ${$$(p)}`)}"><div class="lab">${esc(t)}</div><div class="pair"><div style="top:0;width:${Math.max(p,0)/tmax*100}%;background:#c9d1de"></div><div style="top:11px;width:${Math.max(a,0)/tmax*100}%;background:#1e6be6"></div></div><div style="text-align:right;font-weight:700">${$$(a)} ${deltaHTML(a,p)}</div></div>`; }).join('') || '<p class="muted">No orders match these filters.</p>';
   const toggle = `<span class="seg" role="group" aria-label="Group by">${[['M','Monthly'],['Q','Quarterly'],['Y','Yearly']].map(([k,t]) => `<button type="button" data-gran="${k}" class="${state.gran===k?'on':''}">${t}</button>`).join('')}</span>`;
   return filterBar(toggle) + `<div class="stats">${stats}</div>`
     + `<div class="card" style="margin-bottom:18px"><div class="card-head"><h2>${mainTitle}</h2><span class="count">${rangeLabel(FIRST_MI, ANCHOR)}</span></div><div class="chart-card"><div class="legend">${legend}</div>${main}</div></div>`
-    + `<div class="two-col"><div class="card"><div class="card-head"><h2>This Financial Year vs Last</h2><span class="count">Jul – Jun</span></div><div class="chart-card"><div class="legend"><span><i style="background:#2a78d6"></i>FY${fy} (To Date)</span><span><i style="background:#9aa4b5"></i>FY${fy-1}</span></div>${yoy}</div></div>`
-    + `<div class="card"><div class="card-head"><h2>Revenue By Customer Type</h2><span class="count">Last 12 months vs prior</span></div><div class="chart-card"><div class="legend"><span><i style="background:#2a78d6"></i>Last 12 Months</span><span><i style="background:#c9d1de"></i>Prior 12 Months</span></div>${trows}</div></div></div>`;
+    + `<div class="two-col"><div class="card"><div class="card-head"><h2>This Financial Year vs Last</h2><span class="count">Jul – Jun</span></div><div class="chart-card"><div class="legend"><span><i style="background:#1e6be6"></i>FY${fy} (To Date)</span><span><i style="background:#9aa4b5"></i>FY${fy-1}</span></div>${yoy}</div></div>`
+    + `<div class="card"><div class="card-head"><h2>Revenue By Customer Type</h2><span class="count">Last 12 months vs prior</span></div><div class="chart-card"><div class="legend"><span><i style="background:#1e6be6"></i>Last 12 Months</span><span><i style="background:#c9d1de"></i>Prior 12 Months</span></div>${trows}</div></div></div>`;
 }
 
 /* ================= TAB: WHAT CHANGED ================= */
@@ -706,7 +743,7 @@ function renderChanged(){
   ax.ticks.forEach(v => { s += `<line x1="${l}" x2="${W-r}" y1="${Y(v)}" y2="${Y(v)}" stroke="#e9ecf1"/><text x="${l-8}" y="${Y(v)+4}" text-anchor="end" font-size="11" fill="#8a93a3">${$k(v)}</text>`; });
   steps.forEach((st,i) => {
     const x = l + step*i + (step-bw)/2; let y0,y1,col,lab;
-    if(st.t==='total'){ y0=0; y1=st.v; run=st.v; col='#2a78d6'; lab=$k(st.v); } else { y0=run; y1=run+st.v; run=y1; col=st.v<0?'#d9534f':'#1baf7a'; lab=(st.v<0?'−':'+')+$k(Math.abs(st.v)); }
+    if(st.t==='total'){ y0=0; y1=st.v; run=st.v; col='#1e6be6'; lab=$k(st.v); } else { y0=run; y1=run+st.v; run=y1; col=st.v<0?'#d9534f':'#1baf7a'; lab=(st.v<0?'−':'+')+$k(Math.abs(st.v)); }
     const yt = Y(Math.max(y0,y1)), yb = Y(Math.min(y0,y1));
     s += `<rect x="${x}" y="${yt}" width="${bw}" height="${Math.max(yb-yt,2)}" rx="4" fill="${col}" data-tip="${esc(st.n+'\n'+(st.t==='total'?$$(st.v):(st.v<0?'−':'+')+$$(Math.abs(st.v))))}"/>`;
     s += `<text x="${x+bw/2}" y="${yt-6}" text-anchor="middle" font-size="12.5" font-weight="700" fill="${st.t==='total'?'#1a2233':col}">${lab}</text>`;
@@ -719,8 +756,8 @@ function renderChanged(){
   const tiles = (covered && old.rev>0)
     ? stat('Orders', cur.orders.size.toLocaleString('en-AU'), deltaHTML(cur.orders.size, old.orders.size) + ` from ${old.orders.size.toLocaleString('en-AU')}`, ICON_CART,'#f2eafd','#7a4ae0')
       + stat('Average Order Value', $$(aov(cur)), deltaHTML(aov(cur), aov(old)) + ` from ${$$(aov(old))}`, ICON_MONEY,'#fdf0e2','#eb6834')
-      + stat('Active Accounts', cur.active, deltaHTML(cur.active, old.active) + ` from ${old.active}`, ICON_B,'#e8f1fc','#2a78d6')
-    : stat('Orders', cur.orders.size.toLocaleString('en-AU'), '', ICON_CART,'#f2eafd','#7a4ae0') + stat('Average Order Value', $$(aov(cur)), '', ICON_MONEY,'#fdf0e2','#eb6834') + stat('Active Accounts', cur.active, '', ICON_B,'#e8f1fc','#2a78d6');
+      + stat('Active Accounts', cur.active, deltaHTML(cur.active, old.active) + ` from ${old.active}`, ICON_B,'#e8f1fc','#1e6be6')
+    : stat('Orders', cur.orders.size.toLocaleString('en-AU'), '', ICON_CART,'#f2eafd','#7a4ae0') + stat('Average Order Value', $$(aov(cur)), '', ICON_MONEY,'#fdf0e2','#eb6834') + stat('Active Accounts', cur.active, '', ICON_B,'#e8f1fc','#1e6be6');
   // accounts table
   const all = [...cat.stopped, ...cat.less, ...cat.more, ...cat.fresh];
   const list = (state.wcList === 'inc' ? all.filter(r => r.d>0).sort((a,b) => b.d-a.d) : all.filter(r => r.d<0).sort((a,b) => a.d-b.d)).slice(0,10);
@@ -769,13 +806,13 @@ function renderTrend(){
     const o12 = agg(al, ANCHOR-11, ANCHOR), o24 = agg(al, ANCHOR-23, ANCHOR-12);
     let worst = null;                                         // 3-month window with the biggest drop vs the same months a year earlier
     for(let e = ANCHOR; e >= ANCHOR-9; e--){ const c = agg(al, e-2, e).rev, o = agg(al, e-14, e-12).rev, d = c-o; if(d < 0 && (!worst || d < worst.d)) worst = {d, e}; }
-    const bars = barChart({vals:v, colors:v.map((_,i) => i<12 ? '#c9d1de' : '#2a78d6'), h:240, w:700, label:'Monthly revenue for the selected account',
+    const bars = barChart({vals:v, colors:v.map((_,i) => i<12 ? '#c9d1de' : '#1e6be6'), h:240, w:700, label:'Monthly revenue for the selected account',
       xl:v.map((_,i) => i%3===0 ? {i, t:miShort(ANCHOR-23+i)} : null).filter(Boolean), tip: i => `${miLabel(ANCHOR-23+i)}\nRevenue: ${$$(v[i])}`});
     const prodMap = new Map(); al.filter(l => l.mi>=ANCHOR-11 && l.p).forEach(l => prodMap.set(l.p, (prodMap.get(l.p)||0) + l.q));
     const prods = [...prodMap].sort((a,b) => b[1]-a[1]).slice(0,5).map(([k,q]) => `<tr><td><span class="rep-name">${esc(k)}</span></td><td class="num">${q}</td></tr>`).join('') || '<tr class="empty-row"><td colspan="2">No orders in the last 12 months.</td></tr>';
     detail = `<p class="acct-selected-label">Account Selected</p><p class="acct-selected-name">${esc(sel.a.company)}</p>
       <div class="acct-selected-chips"><span class="chip-pair">Sell Price Tier ${tierTag(sel.a.tier)}</span><span class="chip-pair">Payment Mode ${payTags(sel.a)}</span><span class="chip-pair">Current Sales Rep <b>${esc(sel.a.bdm)}</b></span></div>
-      <div class="sel-trend"><div class="card"><div class="card-head"><h2>Monthly Revenue, Last 24 Months</h2><span class="count">${esc(sel.a.company)}</span></div><div class="chart-card"><div class="legend"><span><i style="background:#2a78d6"></i>Last 12 Months</span><span><i style="background:#c9d1de"></i>Prior 12 Months</span></div>${bars}</div></div>
+      <div class="sel-trend"><div class="card"><div class="card-head"><h2>Monthly Revenue, Last 24 Months</h2><span class="count">${esc(sel.a.company)}</span></div><div class="chart-card"><div class="legend"><span><i style="background:#1e6be6"></i>Last 12 Months</span><span><i style="background:#c9d1de"></i>Prior 12 Months</span></div>${bars}</div></div>
       <div><div class="kv"><div><small>Last 12 Months</small><strong>${$$(sel.l12)}</strong></div><div><small>Prior 12 Months</small><strong>${$$(sel.p12)}</strong></div><div><small>Change</small><strong>${sel.p12>0 ? deltaHTML(sel.l12, sel.p12) : '—'}</strong></div><div><small>Orders, Last 12 Months</small><strong>${o12.orders.size}</strong></div><div><small>Last Order</small><strong>${ddmmyyyy(sel.last)}</strong></div><div><small>Biggest Drop</small><strong>${worst ? `${rangeLabel(worst.e-2, worst.e)} <span class="down">▼ ${$$(Math.abs(worst.d))}</span>` : 'None'}</strong></div></div>
       <div class="card" style="margin-top:12px"><div class="card-head"><h2>Top Products, Last 12 Months</h2><span class="count">Units</span></div><div class="table-scroll"><table class="tbl-compact"><tbody>${prods}</tbody></table></div></div></div></div>`;
   }
