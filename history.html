@@ -307,6 +307,7 @@
   </div>
   <div class="nav-footer">
     <div class="nav-divider"></div>
+    <a class="nav-item" href="home.html" style="text-decoration:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg> Rep Home</a>
     <a class="nav-item" href="./" style="text-decoration:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Sales Dashboard</a>
     <button class="nav-item" id="signOutBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg> Sign Out</button>
   </div>
@@ -730,6 +731,8 @@ document.getElementById('signOutBtn').addEventListener('click', () => { try{ loc
 async function sha256Hex(text){ const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)); return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join(''); }
 async function start(){
   document.getElementById('authOverlay').setAttribute('hidden','');
+  const hm = /^#trend=(.+)$/.exec(location.hash);        // deep link from the Home page: history.html#trend=<customer code>
+  if(hm){ let c = ''; try{ c = decodeURIComponent(hm[1]); }catch(_){} const a = BY_CODE.get(c.toLowerCase()); if(a){ state.tab = 'trend'; state.acct = a.id; } }
   render();
   try { mergeLive(await fetchLive()); LIVE_OK = true; } catch(err){ console.error(err); LIVE_OK = false; }
   setAnchor(); renderPill(); render();
