@@ -52,6 +52,7 @@
   .nav-item:hover{color:#fff; background:rgba(255,255,255,.06);}
   .nav-item.active{color:var(--sidebar-text-active); background:var(--sidebar-active-bg);}
   .nav-divider{border-top:1px solid rgba(255,255,255,.09); margin:14px 4px;}
+  .navgrp{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:#5f6e8f; font-weight:700; padding:16px 12px 4px;}
   .nav-footer{margin-top:auto; display:flex; flex-direction:column; gap:2px;}
 
   .app{margin-left:var(--sidebar-w);}
@@ -274,13 +275,20 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9M11 19V4M18 19v-7"/></svg>
       Reports
     </button>
+  </div>
+  <div class="navgrp">More Views</div>
+  <div class="nav-group">
+    <a class="nav-item" href="home.html" style="text-decoration:none">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg>
+      Rep Home
+    </a>
     <a class="nav-item" href="history.html" style="text-decoration:none">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg>
       History
     </a>
-    <a class="nav-item" href="home.html" style="text-decoration:none">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
-      Rep Home
+    <a class="nav-item" href="https://ravinajulticon-stack.github.io/Sales-Price-Inventory-Dashboard/" target="_blank" rel="noopener" style="text-decoration:none">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12 12 20 4 12V4h8z"/><circle cx="8" cy="8" r="1.2"/></svg>
+      Price &amp; Stock ↗
     </a>
   </div>
   <div class="nav-footer">
@@ -1550,9 +1558,17 @@ async function sha256Hex(text){
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Lets the other pages (Home, History) open a screen here, e.g. index.html#accounts
+function applyHash(){
+  const h = (location.hash || '').slice(1);
+  if(['dashboard','accounts','orders','products','reports'].includes(h)){ if(h !== state.page) setPage(h); }
+  else if(h === 'filters'){ openFilters(); }
+}
+window.addEventListener('hashchange', applyHash);
+
 function unlockDashboard(){
   document.getElementById('authOverlay').setAttribute('hidden', '');
-  loadAndRender();
+  Promise.resolve(loadAndRender()).finally(applyHash);
 }
 
 function signOut(){
