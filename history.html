@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sales Rep History</title>
+<style>
+  :root{
+    --ink-primary:#1a2233;
+    --ink-secondary:#5b6577;
+    --ink-muted:#8a93a3;
+    --surface:#f4f6fa;
+    --surface-card:#ffffff;
+    --border:#e4e7ec;
+    --brand:#2a78d6;
+    --brand-dark:#1c5cab;
+    --good:#0ca30c;
+    --radius:12px;
+    --sidebar-w:224px;
+    --sidebar-bg:#0e1830;
+    --sidebar-text:#93a1c0;
+    --sidebar-text-active:#ffffff;
+    --sidebar-active-bg:#1c3f73;
+    /* categorical slots — fixed order, never reassigned by filters */
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
+    --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--surface);
+    color:var(--ink-primary);
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    position:fixed; top:0; left:0; bottom:0; width:var(--sidebar-w);
+    background:var(--sidebar-bg); display:flex; flex-direction:column;
+    padding:20px 12px; z-index:20;
+  }
+  .sidebar-logo{color:#fff; display:flex; align-items:center; gap:8px; padding:4px 10px 22px; font-weight:700; font-size:15px;}
+  .sidebar-logo svg{flex-shrink:0;}
+  .nav-group{display:flex; flex-direction:column; gap:2px;}
+  .nav-item{
+    display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px;
+    color:var(--sidebar-text); font-size:13.5px; font-weight:600; cursor:pointer; border:none; background:none;
+    text-align:left; width:100%; font-family:inherit;
+  }
+  .nav-item svg{flex-shrink:0; opacity:.85;}
+  .nav-item:hover{color:#fff; background:rgba(255,255,255,.06);}
+  .nav-item.active{color:var(--sidebar-text-active); background:var(--sidebar-active-bg);}
+  .nav-divider{border-top:1px solid rgba(255,255,255,.09); margin:14px 4px;}
+  .nav-footer{margin-top:auto; display:flex; flex-direction:column; gap:2px;}
+
+  .app{margin-left:var(--sidebar-w);}
+  .wrap{max-width:1280px;margin:0 auto;padding:24px 28px 60px;}
+
+  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
+  h1{font-size:21px;margin:0 0 4px;letter-spacing:-0.01em;}
+  .subtitle{color:var(--ink-secondary);font-size:13.5px;margin:0;}
+  .status-pill{
+    display:inline-flex;align-items:center;gap:6px;flex-shrink:0;
+    background:#eef6ee;color:#1a6b2f;border:1px solid #cfe8d2;
+    padding:5px 12px;border-radius:100px;font-size:12.5px;font-weight:600;
+  }
+  .status-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--good);}
+  .status-pill.stale{background:#fff4e0;color:#8a5b00;border-color:#f0d59a;}
+  .status-pill.stale .dot{background:#c98a05;}
+  .top-actions{display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;}
+  .btn{
+    appearance:none;border:1px solid var(--border);background:#fff;color:var(--ink-primary);
+    padding:7px 13px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+  }
+  .btn:hover{border-color:#c7ceda;}
+  .btn-primary{border-color:var(--brand);background:var(--brand);color:#fff;}
+  .btn-primary:hover{background:var(--brand-dark);}
+  .btn:disabled{opacity:.6;cursor:default;}
+  .import-msg{font-size:12.5px;margin:-12px 0 14px;min-height:1em;}
+  .import-msg.ok{color:var(--good);}
+  .import-msg.err{color:#c0392b;}
+  .import-msg.busy{color:var(--ink-secondary);}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px;}
+  .stat-card{background:var(--surface-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;display:flex;gap:12px;align-items:flex-start;}
+  .stat-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .stat-label{font-size:12px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;}
+  .stat-value{font-size:22px;font-weight:700;letter-spacing:-0.02em;}
+  .stat-sub{font-size:12.5px;color:var(--ink-secondary);margin-top:4px;}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px;}
+  .toolbar select, .toolbar input[type="text"]{
+    border:1px solid var(--border);background:#fff;border-radius:8px;padding:8px 12px;font-size:13.5px;color:var(--ink-primary);min-width:150px;
+  }
+  .toolbar input[type="text"]{min-width:210px;}
+  .toolbar input.date-input{min-width:0;padding:8px 10px;}
+  .toolbar .grow{flex:1;}
+  .toolbar .result-count{font-size:12.5px;color:var(--ink-muted);white-space:nowrap;}
+  .chk{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--ink-secondary);cursor:pointer;}
+  .chk input{cursor:pointer;}
+  .chk-hint{color:var(--ink-muted);font-size:12px;}
+
+  .card{background:var(--surface-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+  .card-head{padding:16px 18px 4px;display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+  .card-head h2{font-size:15px;margin:0;}
+  .card-head .count{font-size:12.5px;color:var(--ink-muted);white-space:nowrap;}
+  .card-link{font-size:12.5px;font-weight:600;color:var(--brand);text-decoration:none;cursor:pointer;white-space:nowrap;}
+  .card-link:hover{text-decoration:underline;}
+
+  .table-scroll{max-height:560px;overflow:auto;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  thead th{position:sticky;top:0;background:var(--surface-card);text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-muted);font-weight:700;padding:10px 18px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:default;}
+  thead th.num, tbody td.num{text-align:right;}
+  tbody td{padding:11px 18px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#fafbfc;}
+  tbody tr.clickable{cursor:pointer;}
+  tbody tr.clickable:hover{background:#eef4fc;}
+  tbody tr.row-selected{background:#e8f1fc;}
+  .rep-name{font-weight:600;}
+  .rep-email{color:var(--ink-muted);font-size:12px;display:block;font-weight:400;}
+  .rep-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;flex-shrink:0;vertical-align:middle;}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:100px;background:#e8f6ee;color:var(--good);}
+  .badge .idot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+  /* Sell Price Tier / Payment Mode tags */
+  .tbl-compact thead th, .tbl-compact tbody td{padding-left:10px;padding-right:10px;}
+  .tag{display:inline-flex;align-items:center;font-size:12px;font-weight:600;padding:2px 9px;border-radius:100px;white-space:nowrap;}
+  .tag-tier{background:#e8f1fc;color:var(--brand-dark);}
+  .tag-pay{background:#f1f3f7;color:var(--ink-secondary);}
+  .tag-more{padding:2px 2px;color:var(--ink-muted);}
+  .tag-none{color:var(--ink-muted);}
+  .tag-wrap{display:inline-flex;align-items:center;gap:4px;}
+  .acct-selected-chips{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin:-6px 0 14px;}
+  .acct-selected-chips:empty{display:none;}
+  .chip-pair{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;}
+  .chip-pair .tag{text-transform:none;letter-spacing:0;}
+  .feed-note{margin:0 0 16px;}
+  .mix-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-bottom:18px;align-items:start;}
+  .empty-row td{color:var(--ink-muted);text-align:center;padding:30px 18px;}
+  .row-chevron{color:var(--ink-muted);float:right;}
+
+  .two-col{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:18px;align-items:start;}
+  @media (max-width: 1000px){ .stats{grid-template-columns:repeat(2,1fr);} .two-col{grid-template-columns:1fr;} .dash-layout{grid-template-columns:1fr !important;} }
+  @media (max-width: 820px){ .app{margin-left:0;} }
+
+  .chart-card{padding:18px;}
+  .chart-scroll{max-height:400px;overflow-y:auto;}
+  .chart-row{margin-bottom:13px;}
+  .chart-row:last-child{margin-bottom:0;}
+  .chart-top{display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin-bottom:5px;}
+  .chart-label{flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--ink-secondary);word-break:break-word;line-height:1.35;display:flex;align-items:center;gap:6px;}
+  .chart-label .rep-dot{flex-shrink:0;}
+  .chart-value{flex-shrink:0;font-size:12.5px;font-weight:700;white-space:nowrap;color:var(--ink-primary);text-align:right;}
+  .chart-value-sub{display:block;font-weight:400;color:var(--ink-muted);font-size:11px;}
+  .chart-track{background:#eef0f3;border-radius:4px;height:14px;position:relative;overflow:hidden;}
+  .chart-fill{height:100%;border-radius:4px;}
+
+  .note{margin-top:20px;padding:12px 16px;border:1px dashed #c9d3e0;border-radius:10px;font-size:12.5px;color:var(--ink-secondary);background:#f8f9fb;}
+  .note b{color:var(--ink-primary);}
+  th.sortable{cursor:pointer;user-select:none;}
+  th.sortable:hover{color:var(--ink-secondary);}
+  th.sortable .arrow{opacity:.4;margin-left:3px;}
+  th.sortable.active .arrow{opacity:1;color:var(--brand);}
+
+  /* ---------- Dashboard page layout ---------- */
+  .dash-layout{display:grid;grid-template-columns:230px 1fr;gap:16px;align-items:start;margin-bottom:16px;}
+  .bdm-panel{background:var(--surface-card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+  .bdm-panel-title{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-muted);font-weight:700;margin:0 0 10px;}
+  .bdm-search{width:100%;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px;margin-bottom:10px;}
+  .bdm-list{display:flex;flex-direction:column;gap:2px;max-height:420px;overflow-y:auto;}
+  .bdm-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--ink-secondary);}
+  .bdm-item:hover{background:#f2f4f8;}
+  .bdm-item.active{background:#e8f1fc;color:var(--brand-dark);}
+  .bdm-list-sm{max-height:150px;}
+  .dash-main-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
+  .dash-main-head h2{font-size:16px;margin:0;}
+  .dash-main-head h2 b{color:var(--brand-dark);}
+  .dash-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  @media (max-width:700px){ .dash-stats{grid-template-columns:1fr;} }
+  .acct-selected-label{font-size:12px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin:0 0 2px;}
+  .acct-selected-name{font-size:17px;font-weight:700;color:var(--brand-dark);margin:0 0 14px;}
+
+  .filter-overlay{position:fixed;inset:0;background:rgba(15,20,35,.35);z-index:40;display:none;align-items:flex-start;justify-content:flex-start;}
+  .filter-overlay.open{display:flex;}
+  .filter-panel{background:#fff;width:320px;height:100%;padding:22px;box-shadow:8px 0 24px rgba(0,0,0,.12);display:flex;flex-direction:column;gap:14px;overflow-y:auto;}
+  .filter-panel h3{margin:0 0 4px;font-size:16px;}
+  .filter-field label{display:block;font-size:12px;font-weight:700;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;}
+  .filter-field select, .filter-field input[type="text"]{width:100%;}
+  .filter-close{margin-left:auto;border:none;background:none;font-size:20px;line-height:1;cursor:pointer;color:var(--ink-muted);}
+
+  /* ---------- Sign-in gate ---------- */
+  /* Font + sizing matched to the DDL Product Price & Stock dashboard's login card */
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  .auth-overlay{
+    position:fixed; inset:0; z-index:100; background:var(--surface);
+    display:flex; align-items:center; justify-content:center; padding:24px;
+    font-family:'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .auth-card{
+    box-sizing:border-box;
+    width:100%; max-width:360px; background:var(--surface-card); border:1px solid var(--border);
+    border-radius:16px; padding:32px 28px; box-shadow:0 8px 40px rgba(0,0,0,.14);
+  }
+  .auth-title{color:var(--ink-primary); font-size:19px; font-weight:600; margin:0 0 4px;}
+  .auth-sub{color:var(--ink-secondary); font-size:13px; margin:0 0 24px; line-height:1.4;}
+  .auth-field label{display:block; color:var(--ink-secondary); font-size:12px; margin:0 0 6px;}
+  .auth-input-wrap{position:relative; display:flex; align-items:center; margin-bottom:16px;}
+  .auth-input-wrap input{
+    width:100%; box-sizing:border-box; background:var(--surface); border:1px solid var(--border); color:var(--ink-primary);
+    border-radius:8px; padding:10px 40px 10px 12px; font-size:14px; font-family:inherit;
+  }
+  .auth-input-wrap input:focus{outline:none; border-color:#007aff;}
+  .auth-toggle{
+    position:absolute; right:6px; border:none; background:none; color:var(--ink-muted);
+    cursor:pointer; padding:6px; display:flex; align-items:center; border-radius:6px;
+  }
+  .auth-toggle:hover{color:var(--ink-primary); background:rgba(0,0,0,.05);}
+  .auth-btn{
+    width:100%; background:#007aff; color:#fff; border:none; border-radius:8px;
+    padding:11px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit;
+  }
+  .auth-btn:hover{background:#0060df;}
+  .auth-btn:disabled{opacity:.6; cursor:default;}
+  .auth-error{color:#ff3b30; font-size:12.5px; margin:12px 0 0; min-height:17px;}
+  .auth-overlay[hidden]{display:none;}
+
+  /* ---------- History page additions ---------- */
+  .muted{color:var(--ink-muted);}
+  .up{color:#0a8a4a;font-weight:700;} .down{color:#c0392b;font-weight:700;}
+  .fbar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:10px;}
+  .fsel{display:flex;flex-direction:column;gap:4px;font-size:11.5px;}
+  .fsel b{color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;font-size:11px;}
+  .fsel select{border:1px solid var(--border);background:#fff;border-radius:8px;padding:8px 10px;font-size:13.5px;color:var(--ink-primary);min-width:150px;font-family:inherit;}
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff;}
+  .seg button{border:none;background:#fff;padding:8px 13px;font-size:13px;font-weight:600;color:var(--ink-secondary);cursor:pointer;font-family:inherit;border-right:1px solid var(--border);}
+  .seg button:last-child{border-right:none;}
+  .seg button.on{background:#e8f1fc;color:var(--brand-dark);}
+  .infobar{display:flex;gap:8px;align-items:flex-start;background:#eef4fc;border:1px solid #d6e4f7;color:#2c4a73;border-radius:10px;padding:9px 13px;font-size:12.5px;line-height:1.45;margin-bottom:16px;}
+  .why{margin-top:12px;background:#fff8ef;border:1px solid #f3dcbc;border-radius:10px;padding:11px 14px;font-size:13.5px;line-height:1.5;color:#5b4326;}
+  .hero-big{font-size:34px;font-weight:700;letter-spacing:-0.02em;}
+  .hero-big.down{color:#c0392b;} .hero-big.up{color:#0a8a4a;}
+  .hero-sub{font-size:13.5px;color:var(--ink-secondary);margin-top:4px;}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-secondary);margin-bottom:8px;}
+  .legend i{display:inline-block;width:12px;height:4px;border-radius:2px;margin-right:6px;vertical-align:middle;}
+  .rowbar{display:grid;grid-template-columns:130px 1fr auto;gap:12px;align-items:center;margin-bottom:12px;font-size:12.5px;}
+  .rowbar .lab{font-weight:600;color:var(--ink-secondary);word-break:break-word;}
+  .rowbar .pair{position:relative;height:22px;}
+  .rowbar .pair div{position:absolute;left:0;height:10px;border-radius:3px;}
+  .badge-lost{display:inline-block;background:#fdecea;color:#c0392b;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:100px;}
+  .sel-trend{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;align-items:start;margin-bottom:18px;}
+  @media (max-width:1000px){.sel-trend{grid-template-columns:1fr;}}
+  .kv{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .kv>div{background:var(--surface-card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;}
+  .kv small{display:block;font-size:11px;color:var(--ink-muted);font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px;}
+  .kv strong{font-size:14.5px;}
+  .lk{display:block;font-size:11.5px;color:var(--ink-muted);font-weight:400;}
+  th.hl,td.hl{background:#f6f9fe;}
+  .mini-note{font-size:12px;color:var(--ink-muted);margin:18px 0 0;line-height:1.5;}
+  .hit:hover{fill:rgba(42,120,214,.07);}
+  .rowbar:hover{background:#f6f9fe;}
+  #tip{position:fixed;display:none;z-index:60;pointer-events:none;background:#1a2233;color:#fff;font-size:12.5px;padding:8px 11px;border-radius:8px;white-space:pre-line;line-height:1.5;max-width:300px;box-shadow:0 4px 16px rgba(0,0,0,.25);}
+  .menu-btn{display:none;}
+  @media (max-width:820px){
+    .menu-btn{display:inline-flex;}
+    .sidebar{display:flex;transform:translateX(-100%);transition:transform .2s;}
+    .sidebar.open{transform:none;box-shadow:8px 0 24px rgba(0,0,0,.3);}
+    .wrap{padding:16px 14px 50px;}
+    .stats{grid-template-columns:repeat(2,1fr);}
+    .kv{grid-template-columns:repeat(2,1fr);}
+    .rowbar{grid-template-columns:90px 1fr;} .rowbar>div:last-child{grid-column:1/-1;}
+    .fsel select{min-width:0;width:100%;} .fsel{flex:1 1 140px;}
+    .stats[style]{grid-template-columns:1fr !important;} .two-col[style]{grid-template-columns:1fr !important;}
+  }
+  .tbl-compact td:first-child{white-space:normal;min-width:170px;max-width:250px;}
+  .tbl-compact .rep-name{white-space:normal;}
+  .tbl-compact thead th, .tbl-compact tbody td{padding-left:8px;padding-right:8px;}
+  @media (max-width:820px){ .chart-card{overflow-x:auto;} .chart-card svg{min-width:620px;} }
+</style>
+</head>
+<body>
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <h1 class="auth-title">Sales Rep History</h1>
+    <p class="auth-sub">Past sales for the allocated accounts. Please sign in to continue.</p>
+    <form id="authForm">
+      <div class="auth-field">
+        <label for="authPassword">Password</label>
+        <div class="auth-input-wrap">
+          <input type="password" id="authPassword" autocomplete="current-password" />
+          <button type="button" class="auth-toggle" id="authToggle" aria-label="Show password">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <button type="submit" class="auth-btn">Sign In</button>
+      <p class="auth-error" id="authError"></p>
+    </form>
+  </div>
+</div>
+
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-logo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg> Sales Rep History</div>
+  <div class="nav-group">
+    <button class="nav-item active" data-tab="history"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg> History</button>
+    <button class="nav-item" data-tab="changed"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg> What Changed</button>
+    <button class="nav-item" data-tab="trend"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg> Account Trend</button>
+  </div>
+  <div class="nav-footer">
+    <div class="nav-divider"></div>
+    <a class="nav-item" href="./" style="text-decoration:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Sales Dashboard</a>
+    <button class="nav-item" id="signOutBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg> Sign Out</button>
+  </div>
+</div>
+<div class="app"><div class="wrap">
+  <div class="top">
+    <div><h1 id="pageTitle">History</h1><p class="subtitle" id="pageSub"></p></div>
+    <div class="top-actions"><span class="status-pill stale" id="dataPill"><span class="dot"></span>Loading</span>
+      <button class="btn menu-btn" id="menuBtn" aria-label="Menu">&#9776; Menu</button></div>
+  </div>
+  <div id="root"></div>
+</div></div>
+<div id="tip"></div>
+<script>
+/* ===================================================================
+   History — separate, read-only page. It never writes to the database and
+   never touches the dashboard's feed. Data = embedded Unleashed history
+   (Jul 2020 – Jun 2026, Alicia's allocated accounts only) + the live feed
+   for Jul 2026 onward (read-only, same key and table the dashboard reads).
+   =================================================================== */
+const SUPA_URL = 'https://tfpgywqmwnjesesfcmcg.supabase.co';
+const SUPA_KEY = 'sb_publishable_j6MIouzm484dXuHqH76JNw_39ol8cBx';
+const TABLE = 'sales_order_lines';
+const AUTH_HASH = '9ba9453fa13f90ec6dd4258873b58ac0ac60a349a57f3bdf395c690b26133384';
+const AUTH_KEY = 'ddl_sales_rep_dashboard_auth';
+const HIST = {"accounts":[{"company":"WHF Doors (Aust) Pty Ltd","code":"7934065180835","bdm":"Cameron Levy"},{"company":"ACT Mobile Locksmith","code":"Gab ACT Mobile Locksmith","bdm":"Nathan Salman"},{"company":"MindMaze Info Tech","code":"7205169528995","bdm":"Nathan Salman"},{"company":"Expression Carpentry Solutions Pty Ltd","code":"Expression Carpentry Solutions PTY LTD","bdm":"Husain Ali"},{"company":"Assurance Development & Construction Pty Ltd","code":"7752355840163","bdm":"Husain Ali"},{"company":"Total Lock Pty Ltd","code":"WYNN","bdm":"Brett Gordon"},{"company":"State Property Building Services P/L","code":"23205676646692","bdm":"Brett Gordon"},{"company":"Steland Project Pty Ltd","code":"23523925885220","bdm":"Nathan Salman"},{"company":"Topcu Family Trust","code":"23392337690916","bdm":"Cameron Levy"},{"company":"Complete Lock And Security Services Pty Ltd (Class Locksmiths)","code":"23248279372068","bdm":"Nathan Salman"},{"company":"Kalsi Building Supplies Pty Ltd","code":"22864620880164","bdm":"Nathan Salman"},{"company":"A1 CUSTOM HOMES","code":"23109256642852","bdm":"Brett Gordon"},{"company":"Smart Lock Installation","code":"7910038962468","bdm":"Brett Gordon"},{"company":"Unique Doors & Timber","code":"Unique Doors & Timber","bdm":"Cameron Levy"},{"company":"Tazz Building Group Pty. Ltd","code":"23051521655076","bdm":"Nathan Salman"},{"company":"Fady Malek Investments Pty Ltd ATF Malek Investments Trust","code":"23925102510372","bdm":"Cameron Levy"},{"company":"Timber doors centre pty Ltd","code":"Timber Doors Centre pty Ltd","bdm":"Husain Ali"}],"lines":[[0,"2024-09-26","SHOP-Web #3684","",1.0,13.64,"5 - B2C E-commerce"],[0,"2024-09-26","SHOP-Web #3684","SHP-DR708_PROTECTOR",1.0,44.54,"5 - B2C E-commerce"],[0,"2026-03-17","SHOP-P-Web #4794","",1.0,13.63,"5 - B2C E-commerce"],[0,"2026-03-17","SHOP-P-Web #4794","DDL210S-1H-BLACK",2.0,543.64,"5 - B2C E-commerce"],[0,"2026-04-23","SHOP-P-Web #5061","",1.0,13.63,"5 - B2C E-commerce"],[0,"2026-04-23","SHOP-P-Web #5061","DDL210S-1H-BLACK",1.0,217.45,"5 - B2C E-commerce"],[0,"2026-04-23","SHOP-P-Web #5061","DDL709-FVP-7HWS-BLACK",2.0,1447.27,"5 - B2C E-commerce"],[2,"2024-09-23","SHOP-P-Web #2190","",1.0,0.0,"5 - B2C E-commerce"],[2,"2024-09-23","SHOP-P-Web #2190","DDL709-FVP-7HWS-COPPER",1.0,908.36,"5 - B2C E-commerce"],[2,"2024-10-24","SO-00018719","MSL-InstallationSydney199",1.0,199.0,"5 - B2C E-commerce"],[3,"2023-07-04","SO-00013959","SHP-DH537MU/AU",1.0,335.0,"5 - B2C E-commerce"],[3,"2023-07-25","SO-00014275","SHP-DH537MU/AU",1.0,335.0,"5 - B2C E-commerce"],[3,"2023-10-31","SO-00015378","SHP-DR708AU/VK",1.0,799.0,"5 - B2C E-commerce"],[3,"2023-11-14","SO-00015547","SHS-P717LMK/EN",1.0,443.0,"5 - B2C E-commerce"],[3,"2024-02-01","SO-00016330","SHS-P717LMK/EN",1.0,367.05,"5 - B2C E-commerce"],[3,"2024-02-26","SO-00016519","SHP-DH538MU/AU",1.0,415.0,"5 - B2C E-commerce"],[3,"2024-09-04","SO-00018461","SHP-R80FCLP/EN",1.0,768.86,"5 - B2C E-commerce"],[3,"2024-10-16","SHOP-P-Web #2235","DDL210S-1H-BLACK",1.0,239.27,"5 - B2C E-commerce"],[3,"2024-10-16","SHOP-P-Web #2235","",1.0,13.64,"5 - B2C E-commerce"],[3,"2024-11-18","SO-00019051","SHP-R80FCLP/EN",1.0,768.86,"5 - B2C E-commerce"],[3,"2024-11-19","SO-00019080","SHP-R80FCLP/EN",1.0,768.86,"5 - B2C E-commerce"],[3,"2024-11-22","SHOP-P-Web #2341","",1.0,13.64,"5 - B2C E-commerce"],[3,"2024-11-22","SHOP-P-Web #2341","",1.0,-0.01,"5 - B2C E-commerce"],[3,"2024-11-22","SHOP-P-Web #2341","DDL210S-13H-BLACK",1.0,214.55,"5 - B2C E-commerce"],[3,"2024-12-09","SHOP-Web #3999","",1.0,0.0,"5 - B2C E-commerce"],[3,"2024-12-09","SHOP-Web #3999","SHP-R80FCLP/EN",1.0,768.86,"5 - B2C E-commerce"],[3,"2024-12-13","SO-00019540","PARTS-AU-110STRIKE-EXTD",1.0,61.6,"5 - B2C E-commerce"],[3,"2025-01-17","SHOP-P-Web #2667","",1.0,13.64,"5 - B2C E-commerce"],[3,"2025-01-17","SHOP-P-Web #2667","DDL210S-13H-NICKEL",1.0,202.91,"5 - B2C E-commerce"],[3,"2025-03-12","SHOP-Web #4422","SHP-R80FCLP/EN",1.0,768.86,"5 - B2C E-commerce"],[3,"2025-03-12","SHOP-Web #4422","",1.0,0.0,"5 - B2C E-commerce"],[3,"2025-03-12","SHOP-P-Web #2892","",1.0,0.0,"5 - B2C E-commerce"],[3,"2025-03-12","SHOP-P-Web #2892","DDL210S-1H-BLACK",3.0,709.09,"5 - B2C E-commerce"],[3,"2025-04-01","SHOP-P-Web #2965","",1.0,0.0,"5 - B2C E-commerce"],[3,"2025-04-01","SHOP-P-Web #2965","DDL210S-12H-FREE",1.0,0.0,"5 - B2C E-commerce"],[3,"2025-04-01","SHOP-P-Web #2965","Alpha-VP-5HWS-Black",1.0,690.18,"5 - B2C E-commerce"],[3,"2025-05-06","SHOP-P-Web #3047","",1.0,9.09,"5 - B2C E-commerce"],[3,"2025-05-06","SHOP-P-Web #3047","DDL603E-5HWS",1.0,432.73,"5 - B2C E-commerce"],[3,"2025-05-12","SHOP-P-Web #3058","",1.0,9.09,"5 - B2C E-commerce"],[3,"2025-05-12","SHOP-P-Web #3058","DDL603E-5HWS",1.0,432.73,"5 - B2C E-commerce"],[3,"2025-07-01","SHOP-P-Web #3246","DDL709-FVP-7HWS-COPPER",1.0,700.91,"5 - B2C E-commerce"],[3,"2025-07-01","SHOP-P-Web #3246","",1.0,0.0,"5 - B2C E-commerce"],[3,"2025-07-03","SHOP-P-Web #3277","DDL603E-5HWS",2.0,600.0,"5 - B2C E-commerce"],[3,"2025-07-03","SHOP-P-Web #3277","",1.0,9.09,"5 - B2C E-commerce"],[3,"2025-07-08","SO-00021311","SHP-R80FCLP/ZE",1.0,691.59,"5 - B2C E-commerce"],[3,"2025-07-14","SHOP-P-Web #3337","",1.0,9.09,"5 - B2C E-commerce"],[3,"2025-07-14","SHOP-P-Web #3337","DDL603E-5HWS",2.0,543.64,"5 - B2C E-commerce"],[3,"2025-07-14","SHOP-P-Web #3320","Alpha-VP-5HWS-Black",1.0,690.18,"5 - B2C E-commerce"],[3,"2025-07-14","SHOP-P-Web #3320","",1.0,0.0,"5 - B2C E-commerce"],[3,"2025-08-07","SHOP-Web #4840","",1.0,0.0,"5 - B2C E-commerce"],[3,"2025-08-07","SHOP-Web #4840","SHP-R80FCLP/ZE",1.0,691.59,"5 - B2C E-commerce"],[3,"2025-08-14","SHOP-P-Web #3519","DDL709-FVP-7HWS-BLACK",1.0,908.36,"5 - B2C E-commerce"],[3,"2025-08-14","SHOP-P-Web #3519","",1.0,0.0,"5 - B2C E-commerce"],[3,"2025-09-09","SHOP-P-Web #3668","",1.0,13.64,"5 - B2C E-commerce"],[3,"2025-09-09","SHOP-P-Web #3668","DDL603E-5HWS",1.0,271.82,"5 - B2C E-commerce"],[3,"2025-09-22","SHOP-P-Web #3818","",1.0,13.64,"5 - B2C E-commerce"],[3,"2025-09-22","SHOP-P-Web #3818","Alpha-VP-5HWS-Black",1.0,451.82,"5 - B2C E-commerce"],[3,"2025-09-22","SHOP-P-Web #3823","",1.0,13.64,"5 - B2C E-commerce"],[3,"2025-09-22","SHOP-P-Web #3823","Alpha-VP-5HWS-Black",1.0,451.82,"5 - B2C E-commerce"],[3,"2025-09-25","SHOP-Web #5078","",1.0,0.0,"5 - B2C E-commerce"],[3,"2025-09-25","SHOP-Web #5078","SHP-R80FCLP/ZE",1.0,691.59,"5 - B2C E-commerce"],[3,"2025-10-29","SHOP-P-Web #3977","DDL603E-5HWS",1.0,499.09,"5 - B2C E-commerce"],[3,"2025-10-29","SHOP-P-Web #3977","",1.0,13.64,"5 - B2C E-commerce"],[3,"2026-03-17","SO-00023431","Mortise H924CF",1.0,162.73,"5 - B2C E-commerce"],[3,"2026-03-17","SO-00023431","INSTALL (OUT OF WARRANTY)",1.0,195.0,"5 - B2C E-commerce"],[3,"2026-03-19","SO-00023512","PARTS-AU-AML240",1.0,162.73,"5 - B2C E-commerce"],[4,"2024-06-03","SHOP-Web #3391","",1.0,0.0,"5 - B2C E-commerce"],[4,"2024-06-03","SHOP-Web #3391","SHS-P718LMK/EN",1.0,617.27,"5 - B2C E-commerce"],[4,"2024-10-14","SHOP-P-Web #2225","",1.0,9.09,"5 - B2C E-commerce"],[4,"2024-10-14","SHOP-P-Web #2225","DDL603E-5HWS",4.0,837.82,"5 - B2C E-commerce"],[4,"2025-07-03","SHOP-P-Web #3199","",1.0,9.09,"5 - B2C E-commerce"],[4,"2025-07-03","SHOP-P-Web #3199","DDL603E-5HWS",6.0,1800.0,"5 - B2C E-commerce"],[7,"2026-03-16","SHOP-P-Web #4760","",1.0,13.63,"5 - B2C E-commerce"],[7,"2026-03-16","SHOP-P-Web #4760","DDL801-5HBS-Grey",15.0,8168.18,"5 - B2C E-commerce"],[8,"2026-03-17","SHOP-P-Web #4806","",1.0,-0.04,"5 - B2C E-commerce"],[8,"2026-03-17","SHOP-P-Web #4806","DDL709-FVP-7HWS-BLACK",1.0,681.85,"5 - B2C E-commerce"],[8,"2026-05-07","SHOP-P-Web #5126","DDL720-MVP-17HWS",2.0,1569.45,"5 - B2C E-commerce"],[8,"2026-05-13","SO-00023920","DDL720-MVP-17HWS",2.0,1569.46,"5 - B2C E-commerce"],[8,"2026-06-10","SO-00024117","PARTS-AU-SCREWPACK-DDL720-38-120",2.0,125.45,"5 - B2C E-commerce"],[10,"2026-03-05","SHOP-P-Web #4685","",1.0,18.17,"5 - B2C E-commerce"],[10,"2026-03-05","SHOP-P-Web #4685","7300-5HB-Copper",2.0,452.73,"5 - B2C E-commerce"],[12,"2023-12-18","SHOP-P-Web #1558","",1.0,0.03,"5 - B2C E-commerce"],[12,"2023-12-18","SHOP-P-Web #1558","",1.0,0.0,"5 - B2C E-commerce"],[12,"2023-12-18","SHOP-P-Web #1558","MSL-1YEARWARRANTY",1.0,0.0,"5 - B2C E-commerce"],[12,"2023-12-18","SHOP-P-Web #1558","Alpha-VP-5HWS-Copper",1.0,804.52,"5 - B2C E-commerce"],[12,"2023-12-27","SHOP-P-Web #1565","",1.0,0.0,"5 - B2C E-commerce"],[12,"2023-12-27","SHOP-P-Web #1565","MSL-1YEARWARRANTY",1.0,0.0,"5 - B2C E-commerce"],[12,"2023-12-27","SHOP-P-Web #1565","Alpha-VP-5HWS-Black",1.0,813.64,"5 - B2C E-commerce"],[12,"2024-08-06","SHOP-P-Web #2093","",1.0,9.09,"5 - B2C E-commerce"],[12,"2024-08-06","SHOP-P-Web #2093","DDL603E-5HWS",1.0,261.82,"5 - B2C E-commerce"],[13,"2020-07-17","SO-00003844","SHP-DP609",1.0,703.5,"2 - B2B accounts"],[13,"2020-08-19","SO-00003994","SHP-DR708AU/VK",1.0,833.91,"2 - B2B accounts"],[13,"2020-08-19","SO-00003993","SHP-DR708AU/VK",2.0,1667.82,"2 - B2B accounts"],[13,"2020-08-19","SO-00003993","SHP-DP609",1.0,703.5,"2 - B2B accounts"],[13,"2020-09-03","SO-00004099","SHP-DR708AU/VK",1.0,833.91,"2 - B2B accounts"],[13,"2020-09-03","SO-00004099","SHP-DP609",1.0,703.5,"2 - B2B accounts"],[13,"2020-09-10","SO-00004181","SHP-DR708AU/VK",2.0,1667.82,"2 - B2B accounts"],[13,"2020-09-10","SO-00004181","SHP-DP609",3.0,2110.5,"2 - B2B accounts"],[13,"2020-10-06","SO-00004311","SHS-P717LMK/EN",3.0,1329.0,"2 - B2B accounts"],[13,"2020-10-07","SO-00004315","SHP-DP609",3.0,2110.5,"2 - B2B accounts"],[13,"2020-11-04","SO-00004319","SHP-DP609",4.0,2814.0,"2 - B2B accounts"],[13,"2020-11-18","SO-00004687","SHP-DP609",3.0,2110.5,"2 - B2B accounts"],[13,"2020-11-30","SO-00004797","SHS-P718LMK/EN",1.0,604.93,"2 - B2B accounts"],[13,"2020-12-03","SO-00004839","SHP-DP609",4.0,2814.0,"2 - B2B accounts"],[13,"2020-12-11","SO-00004922","SHS-P718LMK/EN",2.0,1209.86,"2 - B2B accounts"],[13,"2021-01-12","SO-00005230","SHP-DP609",3.0,2110.5,"2 - B2B accounts"],[13,"2021-02-03","SO-00005478","SHP-DP609",3.0,2110.5,"2 - B2B accounts"],[13,"2021-02-22","SO-00005588","SHP-DP609",3.0,2110.5,"2 - B2B accounts"],[13,"2021-03-01","SO-00005654","SHP-DP609",3.0,2110.5,"2 - B2B accounts"],[13,"2021-03-11","SO-00005762","SHP-DP609",3.0,2110.5,"2 - B2B accounts"],[13,"2021-03-25","SO-00005911","SHP-DP609",4.0,2814.0,"2 - B2B accounts"],[13,"2021-04-14","SO-00006078","SHP-DP609",4.0,2814.0,"2 - B2B accounts"],[13,"2021-05-10","SO-00006290","SHP-DP609",4.0,2814.0,"2 - B2B accounts"],[13,"2021-05-31","SO-00006500","SHP-DP609",6.0,4221.0,"2 - B2B accounts"],[13,"2021-06-07","SO-00006529","PARTS-AU-AML240",1.0,78.75,"2 - B2B accounts"],[13,"2021-06-24","SO-00006738","SHP-DP609",4.0,2814.0,"2 - B2B accounts"],[13,"2021-07-06","SO-00006872","SHP-DP609",4.0,2814.0,"2 - B2B accounts"],[13,"2021-07-22","SO-00007093","SHP-DR708AU/VK",1.0,799.0,"2 - B2B accounts"],[13,"2021-08-06","SO-00007253","SHP-DP609",4.0,2814.0,"2 - B2B accounts"],[13,"2021-09-02","SO-00007486","SHP-DP609",4.0,2814.0,"2 - B2B accounts"],[13,"2021-09-21","SO-00007625","SHP-DR708AU/VK",1.0,799.0,"2 - B2B accounts"],[13,"2021-10-07","SO-00007778","SHP-DP609",4.0,2814.0,"2 - B2B accounts"],[13,"2021-10-22","SO-00007875","SHP-DP609",4.0,2814.0,"2 - B2B accounts"],[13,"2021-11-09","SO-00008002","SHS-P718LMK/EN",1.0,577.43,"2 - B2B accounts"],[13,"2021-11-11","SO-00008028","SHP-DP609",4.0,2814.0,"2 - B2B accounts"],[13,"2021-11-11","SO-00008028","PARTS-AU-110STRIKE-EXTD",2.0,123.2,"2 - B2B accounts"],[13,"2021-12-07","SO-00008207","SHP-DP609",4.0,2814.0,"2 - B2B accounts"],[13,"2021-12-17","SO-00008289","SHP-DP609",4.0,2814.0,"2 - B2B accounts"],[13,"2021-12-23","SO-00008314","SHP-DP609",4.0,2814.0,"2 - B2B accounts"],[13,"2022-02-23","SO-00008694","SHP-DP609",8.0,5628.0,"2 - B2B accounts"],[13,"2022-02-23","SO-00008309","PARTS-AU-110STRIKE-EXTD",2.0,123.2,"2 - B2B accounts"],[13,"2022-04-05","SO-00009083","SHP-DP609",8.0,5628.0,"2 - B2B accounts"],[13,"2022-05-11","SO-00009469","SHP-DP609",6.0,4221.0,"2 - B2B accounts"],[13,"2022-06-22","SO-00009787","SHP-DP609",4.0,2814.0,"2 - B2B accounts"],[13,"2022-07-21","SO-00010071","SHP-DP609",10.0,7035.0,"2 - B2B accounts"],[13,"2022-09-12","SO-00010544","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2022-11-02","SO-00011156","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2022-12-12","SO-00011687","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2023-01-30","SO-00012139","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2023-01-30","SO-00011730","PARTS-AU-110STRIKE-EXTD",5.0,308.0,"2 - B2B accounts"],[13,"2023-03-07","SO-00012576","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2023-06-05","SO-00013723","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2023-07-25","SO-00014272","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2023-09-27","SO-00014954","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2023-10-30","SO-00015367","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2023-12-08","SO-00015856","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2024-03-25","SO-00016764","SHP-DP609",10.0,6894.3,"2 - B2B accounts"],[13,"2024-07-08","SO-00017911","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2024-08-14","SO-00018263","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2025-01-28","SO-00019783","SHP-DP609",4.0,2757.72,"2 - B2B accounts"],[13,"2025-02-13","SO-00019965","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2025-02-27","SO-00020192","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2025-04-02","SO-00020426","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2025-05-08","SO-00020845","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2025-06-04","SO-00021048","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2025-07-09","SO-00021342","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2025-08-22","SO-00021963","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2025-09-19","SO-00022227","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[13,"2025-12-17","SO-00022991","SHP-DP609",8.0,5515.44,"2 - B2B accounts"],[14,"2025-09-22","SHOP-P-Web #3815","",1.0,13.64,"5 - B2C E-commerce"],[14,"2025-09-22","SHOP-P-Web #3815","Alpha-VP-5HWS-Black",2.0,903.64,"5 - B2C E-commerce"],[14,"2026-02-27","SO-00023296","PARTS-AU-SCREWPACK-DDL709-60-90",1.0,62.73,"5 - B2C E-commerce"],[16,"2024-01-22","SO-00016191","PARTS-AU-HANDLE-SHAFT-96MM (60-80mm Push & Pull + 40-60mm Handle)",20.0,200.0,"General"]],"through":"2026-06-30"};
+
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const FIRST_MI = 2020*12 + 6;                    // Jul 2020, start of FY2021
+const $$ = n => '$' + Math.round(n).toLocaleString('en-AU');
+const $k = n => { const a = Math.abs(n); return (n<0?'−':'') + '$' + (a>=1000 ? (a/1000).toFixed(a<10000?1:0).replace(/\.0$/,'') + 'k' : Math.round(a)); };
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+const miOf = (y,m0) => y*12 + m0;
+const miFromDate = d => miOf(+d.slice(0,4), +d.slice(5,7)-1);
+const miYear = mi => Math.floor(mi/12), miMon = mi => mi%12;
+const miLabel = mi => MON[miMon(mi)] + ' ' + miYear(mi);
+const miShort = mi => MON[miMon(mi)] + ' ' + String(miYear(mi)).slice(2);
+const fyOf = mi => miMon(mi) >= 6 ? miYear(mi)+1 : miYear(mi);
+const fyStart = fy => (fy-1)*12 + 6;
+function rangeLabel(a,b){ return miYear(a)===miYear(b) ? (a===b ? miLabel(a) : MON[miMon(a)]+' – '+miLabel(b)) : miLabel(a)+' – '+miLabel(b); }
+const ddmmyyyy = d => d ? d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4) : '—';
+const sydneyDate = d => d.toLocaleDateString('en-CA', {timeZone:'Australia/Sydney'});
+
+/* ---------- accounts and lines ---------- */
+const ACCTS = HIST.accounts.map((a,i) => ({id:i, company:a.company, code:a.code, bdm:a.bdm, tier:'', tierAt:'', pays:new Map()}));
+const BY_CODE = new Map(ACCTS.map(a => [a.code.toLowerCase(), a]));
+let LINES = HIST.lines.map(l => ({a:l[0], d:l[1], mi:miFromDate(l[1]), o:l[2], p:l[3], q:l[4], s:l[5], t:l[6]||'Unspecified'}));
+let LIVE_OK = false, LIVE_LAST = '';
+
+function mergeLive(rows){
+  for(const r of rows){
+    const a = BY_CODE.get(String(r.customer_code||'').trim().toLowerCase());
+    if(!a || !r.completed_date) continue;
+    const d = sydneyDate(new Date(r.completed_date));
+    const tier = String(r.sell_price_tier||'').trim();
+    if(tier && d >= a.tierAt){ a.tier = tier; a.tierAt = d; }
+    const pm = String(r.payment_mode||'').trim();
+    if(pm){ if(!a.pays.has(pm)) a.pays.set(pm, new Set()); a.pays.get(pm).add(r.order_no); }
+    if(d <= HIST.through) continue;               // already covered by the embedded history
+    LINES.push({a:a.id, d, mi:miFromDate(d), o:String(r.order_no), p:String(r.product_code||''), q:Number(r.quantity)||0, s:Number(r.sub_total)||0, t:String(r.customer_type||'').trim()||'Unspecified'});
+    if(d > LIVE_LAST) LIVE_LAST = d;
+  }
+}
+async function fetchLive(){
+  const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 25000);
+  try{
+    const hdr = {apikey: SUPA_KEY};
+    const lr = await fetch(`${SUPA_URL}/rest/v1/${TABLE}?select=batch_id,imported_at&order=imported_at.desc&limit=1`, {headers:hdr, signal:ctl.signal});
+    if(!lr.ok) throw new Error('status ' + lr.status);
+    const latest = await lr.json();
+    if(!latest.length) return [];
+    const rows = [], PAGE = 1000;
+    for(let from = 0; ; from += PAGE){
+      const rr = await fetch(`${SUPA_URL}/rest/v1/${TABLE}?select=customer_code,completed_date,order_no,product_code,quantity,sub_total,customer_type,sell_price_tier,payment_mode&batch_id=eq.${encodeURIComponent(latest[0].batch_id)}&order=id.asc`,
+        {headers:{...hdr, Range:`${from}-${from+PAGE-1}`, 'Range-Unit':'items'}, signal:ctl.signal});
+      if(!rr.ok && rr.status !== 206) throw new Error('status ' + rr.status);
+      const page = await rr.json(); rows.push(...page);
+      if(page.length < PAGE || rows.length >= 200000) break;
+    }
+    return rows;
+  } finally { clearTimeout(to); }
+}
+
+/* ---------- time anchor: the last COMPLETE month ---------- */
+let ANCHOR = 0;
+function setAnchor(){
+  const t = sydneyDate(new Date());
+  let a = miFromDate(t) - 1;                      // current month is partial, so it is left out
+  if(!LIVE_OK) a = Math.min(a, miFromDate(HIST.through));   // no live data: stop at the end of the embedded history
+  ANCHOR = a;
+}
+
+/* ---------- state and filters ---------- */
+const state = {tab:'history', rep:'', type:'', tier:'', pay:'', gran:'M', wcPeriod:'12m', wcCompare:'yoy', wcList:'dec', acct:null};
+const NONE = 'Unspecified';
+const passAcct = a => (!state.rep || a.bdm===state.rep)
+  && (!state.tier || (a.tier||NONE)===state.tier)
+  && (!state.pay || (state.pay===NONE ? a.pays.size===0 : a.pays.has(state.pay)));
+function filteredLines(){
+  const ok = new Set(ACCTS.filter(passAcct).map(a => a.id));
+  return LINES.filter(l => ok.has(l.a) && (!state.type || l.t===state.type) && l.mi <= ANCHOR);
+}
+
+/* ---------- aggregation ---------- */
+function agg(lines, m0, m1){
+  const r = {rev:0, units:0, orders:new Set(), byAcct:new Map(), byProd:new Map(), byType:new Map(), byAcctOrders:new Map()};
+  for(const l of lines){
+    if(l.mi<m0 || l.mi>m1) continue;
+    r.rev += l.s; r.units += l.q; r.orders.add(l.o);
+    r.byAcct.set(l.a, (r.byAcct.get(l.a)||0) + l.s);
+    if(!r.byAcctOrders.has(l.a)) r.byAcctOrders.set(l.a, new Set()); r.byAcctOrders.get(l.a).add(l.o);
+    const pk = l.p || '(No Code)'; const p = r.byProd.get(pk) || {u:0,s:0}; p.u += l.q; p.s += l.s; r.byProd.set(pk, p);
+    r.byType.set(l.t, (r.byType.get(l.t)||0) + l.s);
+  }
+  r.active = [...r.byAcct.values()].filter(v => v>0).length;
+  return r;
+}
+function monthly(lines, m0, m1){ const v = new Array(m1-m0+1).fill(0); for(const l of lines) if(l.mi>=m0 && l.mi<=m1) v[l.mi-m0] += l.s; return v; }
+const pctChange = (cur, prior) => prior > 0 ? (cur-prior)/prior*100 : null;
+function deltaHTML(cur, prior, suffix){
+  const p = pctChange(cur, prior);
+  if(p === null) return `<span class="muted">${cur>0 ? 'No Prior Data' : '—'}</span>`;
+  const up = p >= 0;
+  return `<span class="${up?'up':'down'}">${up?'▲':'▼'} ${Math.abs(p).toFixed(1)}%</span>${suffix ? ' ' + esc(suffix) : ''}`;
+}
+function niceMax(v){ if(v<=0) return 1000; const e = Math.pow(10, Math.floor(Math.log10(v))); for(const m of [1,1.5,2,2.5,3,4,5,6,8,10]) if(m*e >= v*1.06) return m*e; return 10*e; }
+
+/* ---------- chart helpers (SVG; every mark has a hover tip) ---------- */
+function axisTicks(max){ const n = 4, raw = max/n; const e = Math.pow(10, Math.floor(Math.log10(raw||1))); let step = e; for(const m of [1,2,2.5,5,10]) if(m*e >= raw){ step = m*e; break; } const out=[]; for(let v=0; ; v+=step){ out.push(v); if(v>=max-step*0.001) break; } return {ticks:out, top:out[out.length-1]}; }
+function lineChart(o){
+  const w=o.w||1130, h=o.h||290, l=56, r=14, t=14, b=26, iw=w-l-r, ih=h-t-b, n=o.n;
+  const mx = Math.max(1, ...o.series.flatMap(s => s.vals.filter(v => v!=null)));
+  const ax = axisTicks(mx*1.04), top = ax.top;
+  const X = i => l + iw*(n<=1 ? 0.5 : i/(n-1)), Y = v => t + ih*(1 - v/top);
+  let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="${esc(o.label)}" style="display:block">`;
+  ax.ticks.forEach(v => { s += `<line x1="${l}" x2="${w-r}" y1="${Y(v)}" y2="${Y(v)}" stroke="#e9ecf1"/><text x="${l-8}" y="${Y(v)+4}" text-anchor="end" font-size="11" fill="#8a93a3">${$k(v)}</text>`; });
+  if(o.band){ s += `<rect x="${X(o.band.a)-iw/(n-1)/2}" y="${t}" width="${X(o.band.b)-X(o.band.a)+iw/(n-1)}" height="${ih}" fill="#fdeee0"/><text x="${Math.min(X(o.band.b)+iw/(n-1)/2, w-r)-4}" y="${t+14}" text-anchor="end" font-size="11.5" font-weight="700" fill="#b4540a">${esc(o.band.label)}</text>`; }
+  (o.xl||[]).forEach(x => { s += `<text x="${X(x.i)}" y="${h-7}" text-anchor="middle" font-size="11" fill="#8a93a3">${esc(x.t)}</text>`; });
+  o.series.forEach(se => {
+    const pts = []; se.vals.forEach((v,i) => { if(v!=null) pts.push([X(i), Y(v)]); });
+    if(pts.length) s += `<polyline fill="none" stroke="${se.color}" stroke-width="2" ${se.dash?'stroke-dasharray="5 4"':''} stroke-linejoin="round" stroke-linecap="round" points="${pts.map(p => p.map(x => x.toFixed(1)).join(',')).join(' ')}"/>`;
+    if(se.end && pts.length){ const p = pts[pts.length-1]; s += `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${se.color}" stroke="#fff" stroke-width="2"/>`; }
+  });
+  const cw = n<=1 ? iw : iw/(n-1);
+  for(let i=0;i<n;i++){
+    const tip = o.tip(i);
+    s += `<rect class="hit" x="${X(i)-cw/2}" y="${t}" width="${cw}" height="${ih}" fill="transparent" data-tip="${esc(tip)}"/>`;
+  }
+  return s + '</svg>';
+}
+function barChart(o){
+  const w=o.w||1130, h=o.h||260, l=56, r=14, t=14, b=26, iw=w-l-r, ih=h-t-b, n=o.vals.length;
+  const mx = Math.max(1, ...o.vals.map(v => Math.max(v,0)));
+  const ax = axisTicks(mx*1.04), top = ax.top, Y = v => t + ih*(1 - Math.max(v,0)/top);
+  const slot = iw/n, bw = Math.min(slot*0.7, 60);
+  let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="${esc(o.label)}" style="display:block">`;
+  ax.ticks.forEach(v => { s += `<line x1="${l}" x2="${w-r}" y1="${Y(v)}" y2="${Y(v)}" stroke="#e9ecf1"/><text x="${l-8}" y="${Y(v)+4}" text-anchor="end" font-size="11" fill="#8a93a3">${$k(v)}</text>`; });
+  o.vals.forEach((v,i) => {
+    const x = l + slot*i + (slot-bw)/2, y = Y(v), hh = Math.max(t+ih-y, v>0?2:0);
+    s += `<rect x="${x}" y="${t+ih-hh}" width="${bw}" height="${hh}" rx="3" fill="${o.colors[i]}" ${o.partial&&o.partial[i]?'opacity="0.55"':''}/>`;
+    s += `<rect class="hit" x="${l+slot*i}" y="${t}" width="${slot}" height="${ih}" fill="transparent" data-tip="${esc(o.tip(i))}"/>`;
+  });
+  (o.xl||[]).forEach(x => { s += `<text x="${l+slot*x.i+slot/2}" y="${h-7}" text-anchor="middle" font-size="11" fill="#8a93a3">${esc(x.t)}</text>`; });
+  return s + '</svg>';
+}
+function spark(vals, w=120, h=28){
+  if(!vals.some(v => v>0)) return '<span class="muted">—</span>';
+  const mx = Math.max(...vals), n = vals.length;
+  const pts = vals.map((v,i) => [2+(w-4)*i/(n-1), 3+(h-6)*(1-v/(mx||1))]);
+  const last = pts[n-1]; const half = Math.floor(n/2);
+  const a = vals.slice(half).reduce((x,y)=>x+y,0), p = vals.slice(0,half).reduce((x,y)=>x+y,0);
+  const col = a >= p ? '#1baf7a' : '#d9534f';
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline fill="none" stroke="${col}" stroke-width="1.8" stroke-linejoin="round" points="${pts.map(q => q.map(x=>x.toFixed(1)).join(',')).join(' ')}"/><circle cx="${last[0]}" cy="${last[1]}" r="2.6" fill="${col}"/></svg>`;
+}
+const ICON_MONEY='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 15c.5 1 1.5 1.5 3 1.5s2.7-.7 2.7-2-1-1.8-2.7-2-2.7-.8-2.7-2 1.2-2 2.7-2 2.5.5 3 1.5"/></svg>';
+const ICON_CART='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h2l2.4 12.2a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.6L21 7H6"/></svg>';
+const ICON_B='<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>';
+const stat = (label, val, sub, ic, bg, fg) => `<div class="stat-card"><div class="stat-icon" style="background:${bg};color:${fg}">${ic}</div><div><div class="stat-label">${esc(label)}</div><div class="stat-value">${val}</div>${sub?`<div class="stat-sub">${sub}</div>`:''}</div></div>`;
+const tierTag = t => t ? `<span class="tag tag-tier">${esc(t)}</span>` : '<span class="tag-none">—</span>';
+const payTags = a => a.pays.size ? `<span class="tag-wrap">${[...a.pays].sort((x,y)=>y[1].size-x[1].size).map(([m,s]) => `<span class="tag tag-pay" title="${esc(m)}: ${s.size} order${s.size===1?'':'s'}">${esc(m)}</span>`).join('')}</span>` : '<span class="tag-none">—</span>';
+
+/* ---------- filter bar ---------- */
+function selHTML(id, label, value, options){
+  return `<label class="fsel"><b>${esc(label)}</b><select data-f="${id}">${options.map(([v,t]) => `<option value="${esc(v)}"${v===value?' selected':''}>${esc(t)}</option>`).join('')}</select></label>`;
+}
+function filterBar(extraRight){
+  const reps = [...new Set(ACCTS.map(a => a.bdm))].sort();
+  const types = [...new Set(LINES.map(l => l.t))].sort();
+  const tiers = [...new Set(ACCTS.map(a => a.tier||NONE))].sort((a,b) => a===NONE?1:b===NONE?-1:a.localeCompare(b,undefined,{numeric:true}));
+  const pays = [...new Set([...ACCTS.flatMap(a => [...a.pays.keys()]), NONE])].sort((a,b) => a===NONE?1:b===NONE?-1:a.localeCompare(b));
+  return `<div class="fbar">`
+    + selHTML('rep','Current Sales Rep',state.rep,[['','All Sales Reps'],...reps.map(r => [r,r])])
+    + selHTML('type','Customer Type',state.type,[['','All'],...types.map(r => [r,r])])
+    + selHTML('tier','Current Sell Price Tier',state.tier,[['','All'],...tiers.map(r => [r,r])])
+    + selHTML('pay','Payment Mode (Account)',state.pay,[['','All'],...pays.map(r => [r,r])])
+    + `<span style="flex:1"></span>${extraRight||''}</div>`
+    + `<div class="infobar"><span>ⓘ</span><span><b>How The Filters Work:</b> Sales Rep, Sell Price Tier And Payment Mode Use Each Account&#39;s <b>Current</b> Setting, Applied To Its Full History. Payment Mode Matches Accounts That Have Used That Mode, Because One Account Can Use More Than One. This Page Covers The ${ACCTS.length} Allocated Accounts In Alicia&#39;s List; ${ACCTS.filter(a => LINES.some(l => l.a===a.id)).length} Of Them Have Orders.</span></div>`;
+}
+
+/* ================= TAB: HISTORY ================= */
+function renderHistory(){
+  const L = filteredLines();
+  const l12 = agg(L, ANCHOR-11, ANCHOR), p12 = agg(L, ANCHOR-23, ANCHOR-12);
+  const aov = r => r.orders.size ? r.rev/r.orders.size : 0;
+  const stats = stat('Revenue, Last 12 Months', $$(l12.rev), deltaHTML(l12.rev, p12.rev, 'vs prior 12 months'), ICON_MONEY,'#e6f7ec','#0ca30c')
+    + stat('Orders, Last 12 Months', l12.orders.size.toLocaleString('en-AU'), deltaHTML(l12.orders.size, p12.orders.size, 'vs prior 12 months'), ICON_CART,'#f2eafd','#7a4ae0')
+    + stat('Average Order Value', $$(aov(l12)), deltaHTML(aov(l12), aov(p12), 'vs prior 12 months'), ICON_MONEY,'#fdf0e2','#eb6834')
+    + stat('Active Accounts', l12.active, deltaHTML(l12.active, p12.active, 'vs prior 12 months'), ICON_B,'#e8f1fc','#2a78d6');
+  const n = ANCHOR - FIRST_MI + 1, mv = monthly(L, FIRST_MI, ANCHOR);
+  let main = '', mainTitle = '', legend = '';
+  if(state.gran === 'M'){
+    const avg = mv.map((_,i) => i>=11 ? mv.slice(i-11,i+1).reduce((x,y)=>x+y,0)/12 : null);
+    const xl = []; for(let i=0;i<n;i++){ const mi = FIRST_MI+i; if(miMon(mi)===6 || miMon(mi)===0) xl.push({i, t: miShort(mi)}); }
+    const cur3 = agg(L, ANCHOR-2, ANCHOR).rev, ly3 = agg(L, ANCHOR-14, ANCHOR-12).rev, pc = pctChange(cur3, ly3);
+    const band = (pc !== null && pc <= -10) ? {a:n-3, b:n-1, label:`Down ${Math.abs(pc).toFixed(0)}% vs Same Months Last Year`} : null;
+    main = lineChart({n, label:'Monthly revenue', series:[{vals:mv, color:'#2a78d6', end:true},{vals:avg, color:'#8a93a3', dash:true}], xl, band,
+      tip: i => `${miLabel(FIRST_MI+i)}\nMonthly Revenue: ${$$(mv[i])}${avg[i]!=null?`\n12-Month Average: ${$$(avg[i])}`:''}`});
+    mainTitle = 'Monthly Revenue'; legend = '<span><i style="background:#2a78d6"></i>Monthly Revenue</span><span><i style="background:#8a93a3"></i>12-Month Average</span>';
+  } else {
+    const size = state.gran === 'Q' ? 3 : 12, buckets = [];
+    for(let s0 = fyStart(fyOf(FIRST_MI)); s0 <= ANCHOR; s0 += size){
+      const e0 = Math.min(s0+size-1, ANCHOR), lab = state.gran==='Q' ? `Q${((s0-fyStart(fyOf(s0)))/3|0)+1} FY${String(fyOf(s0)).slice(2)}` : `FY${fyOf(s0)}`;
+      buckets.push({lab, v:agg(L, s0, e0).rev, partial: (e0 - s0 + 1) < size, from:s0, to:e0});
+    }
+    main = barChart({vals:buckets.map(b => b.v), colors:buckets.map(() => '#2a78d6'), partial:buckets.map(b => b.partial), label:'Revenue by period',
+      xl:buckets.map((b,i) => ({i, t:b.lab})), tip: i => `${buckets[i].lab}${buckets[i].partial?' (To Date)':''}\n${rangeLabel(buckets[i].from, buckets[i].to)}\nRevenue: ${$$(buckets[i].v)}`});
+    mainTitle = state.gran==='Q' ? 'Quarterly Revenue (Financial Year Quarters)' : 'Yearly Revenue (Financial Years)';
+    legend = '<span><i style="background:#2a78d6"></i>Revenue</span>' + (buckets.some(b => b.partial) ? '<span class="muted">Lighter Bar = Part Period</span>' : '');
+  }
+  // this FY vs last FY (Jul – Jun)
+  const fy = fyOf(ANCHOR), cs = fyStart(fy), ps = fyStart(fy-1);
+  const cur = monthly(L, cs, ANCHOR), prev = monthly(L, ps, ps+11);
+  const yoyXl = MON.slice(6).concat(MON.slice(0,6)).map((m,i) => ({i, t:m}));
+  const yoy = lineChart({w:560, h:250, n:12, label:'This financial year versus last', xl:yoyXl,
+    series:[{vals:prev, color:'#9aa4b5'},{vals:Array.from({length:12},(_,i) => i<cur.length ? cur[i] : null), color:'#2a78d6', end:true}],
+    tip: i => `${yoyXl[i].t}\nFY${fy}: ${i<cur.length ? $$(cur[i]) : 'Not Yet'}\nFY${fy-1}: ${$$(prev[i])}`});
+  const types = [...new Set([...l12.byType.keys(), ...p12.byType.keys()])].sort((a,b) => (l12.byType.get(b)||0)-(l12.byType.get(a)||0));
+  const tmax = Math.max(1, ...types.flatMap(t => [l12.byType.get(t)||0, p12.byType.get(t)||0]));
+  const trows = types.map(t => { const a = l12.byType.get(t)||0, p = p12.byType.get(t)||0;
+    return `<div class="rowbar" data-tip="${esc(`${t}\nLast 12 Months: ${$$(a)}\nPrior 12 Months: ${$$(p)}`)}"><div class="lab">${esc(t)}</div><div class="pair"><div style="top:0;width:${Math.max(p,0)/tmax*100}%;background:#c9d1de"></div><div style="top:11px;width:${Math.max(a,0)/tmax*100}%;background:#2a78d6"></div></div><div style="text-align:right;font-weight:700">${$$(a)} ${deltaHTML(a,p)}</div></div>`; }).join('') || '<p class="muted">No orders match these filters.</p>';
+  const toggle = `<span class="seg" role="group" aria-label="Group by">${[['M','Monthly'],['Q','Quarterly'],['Y','Yearly']].map(([k,t]) => `<button type="button" data-gran="${k}" class="${state.gran===k?'on':''}">${t}</button>`).join('')}</span>`;
+  return filterBar(toggle) + `<div class="stats">${stats}</div>`
+    + `<div class="card" style="margin-bottom:18px"><div class="card-head"><h2>${mainTitle}</h2><span class="count">${rangeLabel(FIRST_MI, ANCHOR)}</span></div><div class="chart-card"><div class="legend">${legend}</div>${main}</div></div>`
+    + `<div class="two-col"><div class="card"><div class="card-head"><h2>This Financial Year vs Last</h2><span class="count">Jul – Jun</span></div><div class="chart-card"><div class="legend"><span><i style="background:#2a78d6"></i>FY${fy} (To Date)</span><span><i style="background:#9aa4b5"></i>FY${fy-1}</span></div>${yoy}</div></div>`
+    + `<div class="card"><div class="card-head"><h2>Revenue By Customer Type</h2><span class="count">Last 12 months vs prior</span></div><div class="chart-card"><div class="legend"><span><i style="background:#2a78d6"></i>Last 12 Months</span><span><i style="background:#c9d1de"></i>Prior 12 Months</span></div>${trows}</div></div></div>`;
+}
+
+/* ================= TAB: WHAT CHANGED ================= */
+function wcRanges(){
+  const fy = fyOf(ANCHOR); let a, b;
+  switch(state.wcPeriod){
+    case '3m': a = ANCHOR-2; b = ANCHOR; break;
+    case '6m': a = ANCHOR-5; b = ANCHOR; break;
+    case 'fytd': a = fyStart(fy); b = ANCHOR; break;
+    case 'lfy': a = fyStart(fy-1); b = fyStart(fy)-1; break;
+    default: a = ANCHOR-11; b = ANCHOR;
+  }
+  const len = b-a+1, shift = state.wcCompare === 'yoy' ? 12 : len;
+  return {a, b, pa:a-shift, pb:b-shift};
+}
+const WC_PERIODS = [['3m','Last 3 Months'],['6m','Last 6 Months'],['12m','Last 12 Months'],['fytd','This Financial Year To Date'],['lfy','Last Financial Year']];
+function plural(n, w){ return n + ' ' + w + (n===1?'':'s'); }
+function renderChanged(){
+  const L = filteredLines(), R = wcRanges();
+  const cur = agg(L, R.a, R.b), old = agg(L, R.pa, R.pb);
+  const covered = R.pa >= FIRST_MI;
+  const ids = [...new Set([...cur.byAcct.keys(), ...old.byAcct.keys()])];
+  const cat = {stopped:[], less:[], more:[], fresh:[]};
+  ids.forEach(id => { const A = old.byAcct.get(id)||0, B = cur.byAcct.get(id)||0;
+    const row = {id, A, B, d:B-A};
+    if(A>0 && B<=0) cat.stopped.push(row); else if(A<=0 && B>0) cat.fresh.push(row); else if(B<A) cat.less.push(row); else if(B>A) cat.more.push(row); });
+  const sumD = rows => rows.reduce((s,r) => s+r.d, 0);
+  const dS = sumD(cat.stopped), dL = sumD(cat.less), dM = sumD(cat.more), dN = sumD(cat.fresh);
+  const D = cur.rev - old.rev, p = pctChange(cur.rev, old.rev);
+  const curLab = rangeLabel(R.a, R.b), oldLab = rangeLabel(R.pa, R.pb);
+  let headline, hero;
+  if(!covered || old.rev <= 0){ headline = 'No Comparison Data For This Period'; hero = `<div class="hero-big">${$$(cur.rev)}</div><div class="hero-sub">Revenue in ${esc(curLab)}. There is no revenue in ${esc(oldLab)} to compare with.</div>`; }
+  else { headline = `Revenue Is ${D<0?'Down':D>0?'Up':'Flat'} ${Math.abs(p).toFixed(1)}%`;
+    hero = `<div class="hero-big ${D<0?'down':D>0?'up':''}">${D<0?'▼':D>0?'▲':''} ${$$(Math.abs(D))}</div><div class="hero-sub">${$$(old.rev)} in ${esc(oldLab)} → ${$$(cur.rev)} in ${esc(curLab)}</div>`; }
+  const bits = [];
+  if(cat.stopped.length) bits.push(`${plural(cat.stopped.length,'account')} stopped ordering altogether (${$$(Math.abs(dS))} lost).`);
+  if(cat.less.length) bits.push(`${plural(cat.less.length,'account')} kept ordering but spent less (${$$(Math.abs(dL))} lost).`);
+  if(cat.more.length) bits.push(`${plural(cat.more.length,'account')} spent more (${$$(dM)} gained).`);
+  if(cat.fresh.length) bits.push(`${plural(cat.fresh.length,'new account')} ordered for the first time in this comparison (${$$(dN)} gained).`);
+  const why = (covered && old.rev>0 && bits.length) ? `<div class="why"><b>In Plain Terms:</b> ${bits.join(' ')} The net ${D<0?'fall':'change'} is ${$$(Math.abs(D))}.</div>` : '';
+  // bridge
+  const steps = [{n:oldLab,v:old.rev,t:'total'},{n:'Accounts That Stopped Ordering',v:dS,t:'d'},{n:'Accounts Ordering Less',v:dL,t:'d'},{n:'Accounts Ordering More',v:dM,t:'d'},{n:'New Accounts',v:dN,t:'d'},{n:curLab,v:cur.rev,t:'total'}];
+  const W=1130,H=300,l=60,r=10,t=34,b=56, iw=W-l-r, ih=H-t-b, step=iw/steps.length, bw=step*0.58;
+  let run=0, hi=0; steps.forEach(st => { if(st.t==='total'){ run=st.v; } else run+=st.v; hi=Math.max(hi,run,st.t==='total'?st.v:0); }); run=0;
+  const ax = axisTicks(Math.max(hi,1)*1.08), top = ax.top, Y = v => t + ih*(1 - v/top);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Where the change came from" style="display:block">`;
+  ax.ticks.forEach(v => { s += `<line x1="${l}" x2="${W-r}" y1="${Y(v)}" y2="${Y(v)}" stroke="#e9ecf1"/><text x="${l-8}" y="${Y(v)+4}" text-anchor="end" font-size="11" fill="#8a93a3">${$k(v)}</text>`; });
+  steps.forEach((st,i) => {
+    const x = l + step*i + (step-bw)/2; let y0,y1,col,lab;
+    if(st.t==='total'){ y0=0; y1=st.v; run=st.v; col='#2a78d6'; lab=$k(st.v); } else { y0=run; y1=run+st.v; run=y1; col=st.v<0?'#d9534f':'#1baf7a'; lab=(st.v<0?'−':'+')+$k(Math.abs(st.v)); }
+    const yt = Y(Math.max(y0,y1)), yb = Y(Math.min(y0,y1));
+    s += `<rect x="${x}" y="${yt}" width="${bw}" height="${Math.max(yb-yt,2)}" rx="4" fill="${col}" data-tip="${esc(st.n+'\n'+(st.t==='total'?$$(st.v):(st.v<0?'−':'+')+$$(Math.abs(st.v))))}"/>`;
+    s += `<text x="${x+bw/2}" y="${yt-6}" text-anchor="middle" font-size="12.5" font-weight="700" fill="${st.t==='total'?'#1a2233':col}">${lab}</text>`;
+    const words = st.n.split(' '), mid = Math.ceil(words.length/2);
+    [words.slice(0,mid).join(' '), words.slice(mid).join(' ')].forEach((ln,k) => { if(ln) s += `<text x="${x+bw/2}" y="${H-30+k*14}" text-anchor="middle" font-size="11.5" fill="#5b6577" font-weight="600">${esc(ln)}</text>`; });
+    if(i<steps.length-1) s += `<line x1="${x+bw}" x2="${x+step}" y1="${Y(run)}" y2="${Y(run)}" stroke="#b9c1cf" stroke-dasharray="3 3"/>`;
+  });
+  s += '</svg>';
+  const aov = r => r.orders.size ? r.rev/r.orders.size : 0;
+  const tiles = (covered && old.rev>0)
+    ? stat('Orders', cur.orders.size.toLocaleString('en-AU'), deltaHTML(cur.orders.size, old.orders.size) + ` from ${old.orders.size.toLocaleString('en-AU')}`, ICON_CART,'#f2eafd','#7a4ae0')
+      + stat('Average Order Value', $$(aov(cur)), deltaHTML(aov(cur), aov(old)) + ` from ${$$(aov(old))}`, ICON_MONEY,'#fdf0e2','#eb6834')
+      + stat('Active Accounts', cur.active, deltaHTML(cur.active, old.active) + ` from ${old.active}`, ICON_B,'#e8f1fc','#2a78d6')
+    : stat('Orders', cur.orders.size.toLocaleString('en-AU'), '', ICON_CART,'#f2eafd','#7a4ae0') + stat('Average Order Value', $$(aov(cur)), '', ICON_MONEY,'#fdf0e2','#eb6834') + stat('Active Accounts', cur.active, '', ICON_B,'#e8f1fc','#2a78d6');
+  // accounts table
+  const all = [...cat.stopped, ...cat.less, ...cat.more, ...cat.fresh];
+  const list = (state.wcList === 'inc' ? all.filter(r => r.d>0).sort((a,b) => b.d-a.d) : all.filter(r => r.d<0).sort((a,b) => a.d-b.d)).slice(0,10);
+  const arows = list.map(r => { const a = ACCTS[r.id];
+    return `<tr><td><span class="rep-name" style="white-space:normal">${esc(a.company)}</span></td><td>${esc(a.bdm)}</td><td class="num">${$$(r.A)}</td><td class="num">${r.B<=0 && r.A>0 ? '<span class="badge-lost">No Orders</span>' : $$(r.B)}</td><td class="num ${r.d<0?'down':'up'}">${r.d<0?'▼':'▲'} ${$$(Math.abs(r.d))}</td></tr>`; }).join('')
+    || `<tr class="empty-row"><td colspan="5">No accounts ${state.wcList==='inc'?'increased':'decreased'} in this comparison.</td></tr>`;
+  // products table
+  const pk = [...new Set([...cur.byProd.keys(), ...old.byProd.keys()])].map(k => { const a = old.byProd.get(k)?.u||0, b = cur.byProd.get(k)?.u||0; return {k, a, b, d:b-a}; })
+    .filter(r => r.d !== 0).sort((x,y) => (state.wcList==='inc' ? y.d-x.d : x.d-y.d)).filter(r => state.wcList==='inc' ? r.d>0 : r.d<0).slice(0,8);
+  const prows = pk.map(r => `<tr><td><span class="rep-name">${esc(r.k)}</span></td><td class="num">${r.a}</td><td class="num">${r.b}</td><td class="num ${r.d<0?'down':'up'}">${r.d<0?'▼':'▲'} ${Math.abs(r.d)}</td></tr>`).join('')
+    || `<tr class="empty-row"><td colspan="4">No products ${state.wcList==='inc'?'increased':'decreased'}.</td></tr>`;
+  const controls = `<div class="fbar">`
+    + selHTML('wcPeriod','Compare',state.wcPeriod,WC_PERIODS)
+    + selHTML('wcCompare','With',state.wcCompare,[['yoy','Same Period Last Year'],['prev','Previous Period']])
+    + selHTML('rep','Current Sales Rep',state.rep,[['','All Sales Reps'],...[...new Set(ACCTS.map(a => a.bdm))].sort().map(r => [r,r])])
+    + `<span style="flex:1"></span><span class="seg" role="group" aria-label="Direction">${[['dec','Biggest Decreases'],['inc','Biggest Increases']].map(([k,t]) => `<button type="button" data-wclist="${k}" class="${state.wcList===k?'on':''}">${t}</button>`).join('')}</span></div>`
+    + `<div class="infobar"><span>ⓘ</span><span><b>Current Rep Shown:</b> Each Account Is Listed Under Its Current Sales Rep. Accounts That Have Stopped Ordering Keep Their Last Known Rep. Tier, Payment Mode And Customer Type Filters Are On The History Tab.</span></div>`;
+  return controls
+    + `<div class="card" style="margin-bottom:18px"><div class="card-head"><h2>${esc(headline)}</h2><span class="count">${esc(curLab)} vs ${esc(oldLab)}</span></div><div class="chart-card">${hero}${why}</div></div>`
+    + (covered ? `<div class="card" style="margin-bottom:18px"><div class="card-head"><h2>Where The Change Came From</h2><span class="count">${esc(oldLab)} to ${esc(curLab)}</span></div><div class="chart-card">${s}</div></div>` : `<div class="note">The comparison period (${esc(oldLab)}) starts before the first data in Jul 2020, so there is nothing to compare with. Choose a shorter period.</div>`)
+    + `<div class="stats" style="grid-template-columns:repeat(3,1fr)">${tiles}</div>`
+    + `<div class="two-col" style="grid-template-columns:1.25fr 1fr"><div class="card"><div class="card-head"><h2>Accounts Behind The Change</h2><span class="count">${state.wcList==='inc'?'Biggest increases':'Biggest decreases'} · Revenue</span></div><div class="table-scroll"><table class="tbl-compact"><thead><tr><th>Account</th><th>Current Sales Rep</th><th class="num">Before</th><th class="num">After</th><th class="num">Change</th></tr></thead><tbody>${arows}</tbody></table></div></div>`
+    + `<div class="card"><div class="card-head"><h2>Products Behind The Change</h2><span class="count">Units sold</span></div><div class="table-scroll"><table class="tbl-compact"><thead><tr><th>SKU</th><th class="num">Before</th><th class="num">After</th><th class="num">Change</th></tr></thead><tbody>${prows}</tbody></table></div></div></div>`;
+}
+
+/* ================= TAB: ACCOUNT TREND ================= */
+function renderTrend(){
+  const L = filteredLines();
+  const rows = ACCTS.filter(passAcct).map(a => {
+    const al = L.filter(l => l.a===a.id), allTime = LINES.filter(l => l.a===a.id && l.mi<=ANCHOR);
+    const l12 = al.filter(l => l.mi>=ANCHOR-11).reduce((s,l) => s+l.s, 0), p12 = al.filter(l => l.mi>=ANCHOR-23 && l.mi<=ANCHOR-12).reduce((s,l) => s+l.s, 0);
+    const last = allTime.reduce((m,l) => l.d>m ? l.d : m, '');
+    return {a, l12, p12, last, has:allTime.length>0, tr:monthly(al, ANCHOR-23, ANCHOR)};
+  }).sort((x,y) => (y.l12-x.l12) || ((y.has?1:0)-(x.has?1:0)) || x.a.company.localeCompare(y.a.company));
+  if(state.acct==null || !rows.some(r => r.a.id===state.acct)) state.acct = (rows.find(r => r.has) || rows[0] || {a:{id:null}}).a.id;
+  const trs = rows.map(r => {
+    const chg = r.has ? (r.p12>0 ? deltaHTML(r.l12, r.p12) : (r.l12>0 ? '<span class="muted">No Prior Sales</span>' : '<span class="muted">—</span>')) : '<span class="muted">—</span>';
+    return `<tr class="clickable ${r.a.id===state.acct?'row-selected':''}" data-acct="${r.a.id}" tabindex="0" role="button" aria-label="Show ${esc(r.a.company)}">
+      <td><span class="rep-name">${esc(r.a.company)}</span>${r.has?'':'<span class="lk">No Orders Since Jul 2020</span>'}</td><td>${esc(r.a.bdm)}</td><td>${tierTag(r.a.tier)}</td><td>${payTags(r.a)}</td>
+      <td class="num hl">${r.has?$$(r.l12):'—'}</td><td class="num hl">${chg}</td><td class="hl">${spark(r.tr)}</td><td>${ddmmyyyy(r.last)}</td><td><span class="row-chevron">›</span></td></tr>`; }).join('')
+    || '<tr class="empty-row"><td colspan="9">No accounts match these filters.</td></tr>';
+  // detail
+  let detail = '';
+  const sel = rows.find(r => r.a.id===state.acct);
+  if(sel){
+    const al = L.filter(l => l.a===sel.a.id), v = monthly(al, ANCHOR-23, ANCHOR);
+    const o12 = agg(al, ANCHOR-11, ANCHOR), o24 = agg(al, ANCHOR-23, ANCHOR-12);
+    let worst = null;                                         // 3-month window with the biggest drop vs the same months a year earlier
+    for(let e = ANCHOR; e >= ANCHOR-9; e--){ const c = agg(al, e-2, e).rev, o = agg(al, e-14, e-12).rev, d = c-o; if(d < 0 && (!worst || d < worst.d)) worst = {d, e}; }
+    const bars = barChart({vals:v, colors:v.map((_,i) => i<12 ? '#c9d1de' : '#2a78d6'), h:240, w:700, label:'Monthly revenue for the selected account',
+      xl:v.map((_,i) => i%3===0 ? {i, t:miShort(ANCHOR-23+i)} : null).filter(Boolean), tip: i => `${miLabel(ANCHOR-23+i)}\nRevenue: ${$$(v[i])}`});
+    const prodMap = new Map(); al.filter(l => l.mi>=ANCHOR-11).forEach(l => prodMap.set(l.p||'(No Code)', (prodMap.get(l.p||'(No Code)')||0) + l.q));
+    const prods = [...prodMap].sort((a,b) => b[1]-a[1]).slice(0,5).map(([k,q]) => `<tr><td><span class="rep-name">${esc(k)}</span></td><td class="num">${q}</td></tr>`).join('') || '<tr class="empty-row"><td colspan="2">No orders in the last 12 months.</td></tr>';
+    detail = `<p class="acct-selected-label">Account Selected</p><p class="acct-selected-name">${esc(sel.a.company)}</p>
+      <div class="acct-selected-chips"><span class="chip-pair">Sell Price Tier ${tierTag(sel.a.tier)}</span><span class="chip-pair">Payment Mode ${payTags(sel.a)}</span><span class="chip-pair">Current Sales Rep <b>${esc(sel.a.bdm)}</b></span></div>
+      <div class="sel-trend"><div class="card"><div class="card-head"><h2>Monthly Revenue, Last 24 Months</h2><span class="count">${esc(sel.a.company)}</span></div><div class="chart-card"><div class="legend"><span><i style="background:#2a78d6"></i>Last 12 Months</span><span><i style="background:#c9d1de"></i>Prior 12 Months</span></div>${bars}</div></div>
+      <div><div class="kv"><div><small>Last 12 Months</small><strong>${$$(sel.l12)}</strong></div><div><small>Prior 12 Months</small><strong>${$$(sel.p12)}</strong></div><div><small>Change</small><strong>${sel.p12>0 ? deltaHTML(sel.l12, sel.p12) : '—'}</strong></div><div><small>Orders, Last 12 Months</small><strong>${o12.orders.size}</strong></div><div><small>Last Order</small><strong>${ddmmyyyy(sel.last)}</strong></div><div><small>Biggest Drop</small><strong>${worst ? `${rangeLabel(worst.e-2, worst.e)} <span class="down">▼ ${$$(Math.abs(worst.d))}</span>` : 'None'}</strong></div></div>
+      <div class="card" style="margin-top:12px"><div class="card-head"><h2>Top Products, Last 12 Months</h2><span class="count">Units</span></div><div class="table-scroll"><table class="tbl-compact"><tbody>${prods}</tbody></table></div></div></div></div>`;
+  }
+  const reps = [...new Set(ACCTS.map(a => a.bdm))].sort();
+  return filterBar('')
+    + `<div class="card" style="margin-bottom:18px"><div class="card-head"><h2>Allocated Accounts</h2><span class="count">${rows.length} account${rows.length===1?'':'s'} · trend columns highlighted</span></div><div class="table-scroll"><table class="tbl-compact"><thead><tr><th>Account</th><th>Current Sales Rep</th><th>Sell Price Tier</th><th>Payment Mode</th><th class="num hl">Last 12 Months</th><th class="num hl">Vs Prior 12 Months</th><th class="hl">24-Month Trend</th><th>Last Order</th><th></th></tr></thead><tbody>${trs}</tbody></table></div></div>` + detail;
+}
+
+/* ================= shell ================= */
+const TITLES = {
+  history:{t:'History', s:'Revenue over time for the allocated accounts, with trends you can filter'},
+  changed:{t:'What Changed', s:'Compare two periods and see which accounts and products explain the difference'},
+  trend:{t:'Account Trend', s:'How each allocated account is trending, and why'},
+};
+function renderPill(){
+  const el = document.getElementById('dataPill');
+  if(LIVE_OK){ el.classList.remove('stale'); el.innerHTML = '<span class="dot"></span>Live Feed To ' + esc(ddmmyyyy(LIVE_LAST || HIST.through)); }
+  else { el.classList.add('stale'); el.innerHTML = '<span class="dot"></span>History Only To ' + esc(ddmmyyyy(HIST.through)); }
+}
+function render(){
+  document.getElementById('pageTitle').textContent = TITLES[state.tab].t;
+  document.getElementById('pageSub').textContent = TITLES[state.tab].s;
+  document.querySelectorAll('.nav-item[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab===state.tab));
+  const body = state.tab==='history' ? renderHistory() : state.tab==='changed' ? renderChanged() : renderTrend();
+  const foot = `<p class="mini-note">Amounts are the Sub Total from the Unleashed Sales Enquiry. Jul 2020 – Jun 2026 comes from the FY2021 – FY2026 exports; Jul 2026 onward is the live feed. The current month is left out until it is complete. Accounts are matched on customer code, so a customer who orders under a contact&#39;s name still counts toward the company.</p>`;
+  const warn = LIVE_OK ? '' : `<div class="note">The live feed could not be reached, so this page only shows history up to ${esc(ddmmyyyy(HIST.through))}. Reload to try again.</div>`;
+  document.getElementById('root').innerHTML = warn + body + foot;
+}
+
+/* ---------- events (delegated; nothing from the data is ever placed in an inline handler) ---------- */
+const tip = document.getElementById('tip');
+document.addEventListener('mousemove', e => {
+  const el = e.target.closest && e.target.closest('[data-tip]');
+  if(!el){ tip.style.display = 'none'; return; }
+  tip.textContent = el.getAttribute('data-tip');
+  tip.style.display = 'block';
+  const x = Math.min(e.clientX + 14, window.innerWidth - tip.offsetWidth - 8), y = Math.min(e.clientY + 14, window.innerHeight - tip.offsetHeight - 8);
+  tip.style.left = Math.max(4,x) + 'px'; tip.style.top = Math.max(4,y) + 'px';
+});
+document.addEventListener('change', e => {
+  const f = e.target.dataset && e.target.dataset.f; if(!f) return;
+  state[f] = e.target.value; render();
+});
+function activate(el){
+  if(el.dataset.gran){ state.gran = el.dataset.gran; render(); }
+  else if(el.dataset.wclist){ state.wcList = el.dataset.wclist; render(); }
+  else if(el.dataset.acct){ state.acct = Number(el.dataset.acct); render(); }
+  else if(el.dataset.tab){ state.tab = el.dataset.tab; document.querySelector('.sidebar').classList.remove('open'); render(); window.scrollTo(0,0); }
+}
+document.addEventListener('click', e => { const el = e.target.closest('[data-gran],[data-wclist],[data-acct],[data-tab]'); if(el) activate(el); });
+document.addEventListener('keydown', e => { if((e.key==='Enter'||e.key===' ') && e.target.matches && e.target.matches('tr[data-acct]')){ e.preventDefault(); activate(e.target); } });
+document.getElementById('menuBtn').addEventListener('click', () => document.querySelector('.sidebar').classList.toggle('open'));
+document.getElementById('signOutBtn').addEventListener('click', () => { try{ localStorage.removeItem(AUTH_KEY); }catch(_){} location.reload(); });
+
+/* ---------- sign-in gate (same password and same browser sign-in as the dashboard) ---------- */
+async function sha256Hex(text){ const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)); return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join(''); }
+async function start(){
+  document.getElementById('authOverlay').setAttribute('hidden','');
+  render();
+  try { mergeLive(await fetchLive()); LIVE_OK = true; } catch(err){ console.error(err); LIVE_OK = false; }
+  setAnchor(); renderPill(); render();
+}
+async function initAuth(){
+  let ok = false;
+  try { ok = localStorage.getItem(AUTH_KEY) === AUTH_HASH; } catch(_){}
+  if(ok){ start(); return; }
+  const form = document.getElementById('authForm'), input = document.getElementById('authPassword'), err = document.getElementById('authError'), toggle = document.getElementById('authToggle');
+  toggle.addEventListener('click', () => { const show = input.type==='password'; input.type = show ? 'text' : 'password'; toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password'); });
+  form.addEventListener('submit', async e => {
+    e.preventDefault(); err.textContent = '';
+    if(!input.value){ err.textContent = 'Enter the password.'; return; }
+    if(await sha256Hex(input.value) === AUTH_HASH){ try{ localStorage.setItem(AUTH_KEY, AUTH_HASH); }catch(_){} start(); }
+    else { err.textContent = 'Incorrect password.'; input.value = ''; input.focus(); }
+  });
+  input.focus();
+}
+setAnchor(); initAuth();
+
+</script>
+</body>
+</html>
