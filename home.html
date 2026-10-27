@@ -228,7 +228,7 @@
   /* ---------- History page additions ---------- */
   .muted{color:var(--ink-muted);}
   .up{color:#0a8a4a;font-weight:700;} .down{color:#c0392b;font-weight:700;}
-  .fbar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:10px;}
+  .tbar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:10px;}
   .fsel{display:flex;flex-direction:column;gap:4px;font-size:11.5px;}
   .fsel b{color:var(--ink-muted);text-transform:uppercase;letter-spacing:.04em;font-size:11px;}
   .fsel select{border:1px solid var(--border);background:#fff;border-radius:8px;padding:8px 10px;font-size:13.5px;color:var(--ink-primary);min-width:150px;font-family:inherit;}
@@ -360,6 +360,91 @@
     .tabbar{display:grid;position:fixed;left:0;right:0;bottom:0;z-index:25;background:#fff;border-top:1px solid var(--border);grid-template-columns:repeat(4,1fr);padding:8px 0 12px;font-size:10.5px;font-weight:600;color:var(--ink-muted);text-align:center;}
     .tabbar a{color:inherit;text-decoration:none;} .tabbar a.on{color:var(--brand);} .tabbar svg{display:block;margin:0 auto 3px;}
   }
+
+  /* ===== Shared filter bar + active-filter chips (same look as the Sales Dashboard) ===== */
+  .top{margin-bottom:14px;align-items:center;}
+  .fbar{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-end;background:var(--surface-card);border:1px solid #eceef2;border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;}
+  .fctl{display:flex;flex-direction:column;gap:4px;min-width:140px;flex:0 1 220px;}
+  .fctl small{font-size:11.5px;font-weight:600;color:var(--ink-muted);}
+  .fctl select,.fctl input{border:1px solid var(--border);border-radius:8px;padding:7px 10px;font:inherit;font-size:13px;background:#fff;color:var(--ink-primary);width:100%;min-width:0;}
+  .fctl select:focus,.fctl input:focus{outline:2px solid #b9d3f3;border-color:var(--brand);}
+  .fbar .fsearch{flex:1 1 260px;}
+  .fbar .fsec{flex:1 1 160px;display:none;}
+  .fbar.show-more .fsec{display:flex;}
+  .fbreak{flex-basis:100%;height:0;}
+  .fbar:not(.show-more) .fbreak{display:none;}
+  .fbar [hidden]{display:none !important;}
+  .more-btn{align-self:flex-end;white-space:nowrap;padding:8px 13px;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 16px;font-size:12.5px;min-height:24px;}
+  .chips-label{color:var(--ink-muted);font-weight:600;margin-right:4px;}
+  .fchip{display:inline-flex;align-items:center;gap:6px;background:#e8f1fc;color:var(--brand-dark);border-radius:100px;padding:3px 4px 3px 11px;font-weight:600;max-width:100%;}
+  .fchip small{font-weight:600;color:#5b7fb0;font-size:11.5px;}
+  .fchip button{border:none;background:rgba(28,92,171,.12);color:var(--brand-dark);width:18px;height:18px;border-radius:50%;cursor:pointer;line-height:18px;font-size:13px;padding:0;flex-shrink:0;}
+  .fchip button:hover{background:rgba(28,92,171,.25);}
+  .chip-clear{border:none;background:none;color:var(--brand);font-weight:600;cursor:pointer;font:inherit;font-size:12.5px;padding:3px 6px;}
+  .chip-clear:hover{text-decoration:underline;}
+  @media (max-width:820px){ .fctl{flex:1 1 140px;} .fbar .fsearch{flex:1 1 100%;order:5;} }
+
+  /* ===== Dashboard look (copied from the Sales Dashboard "Focused" style) ===== */
+  /* tighter spacing, one grid */
+  .stats{gap:12px;margin-bottom:16px;}
+  .stats-4{grid-template-columns:repeat(4,1fr);}
+  .stat-card{padding:13px 16px;}
+  .stat-value{font-size:20px;}
+  .card-head{padding:14px 16px 6px;}
+  .chart-card{padding:12px 16px 16px;}
+  .two-col{grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+  .dash-layout{gap:14px;}
+  .dash-stats{gap:12px;}
+  thead th{padding:9px 14px;}
+  tbody td{padding:9px 14px;}
+  .tbl-compact thead th,.tbl-compact tbody td{padding-left:10px;padding-right:10px;}
+  .table-scroll.paged{max-height:none;}
+  .note{margin-top:14px;}
+
+  /* ================= Focused look (Option B) ================= */
+  /* fewer colours: no icon squares, one bar colour, plain-text tier / payment */
+  .stat-icon{display:none;}
+  .stat-label{text-transform:none;letter-spacing:0;font-size:12.5px;color:var(--ink-secondary);}
+  .stat-sub{color:var(--ink-muted);}
+  .chart-fill{background:#4f8fdc !important;}
+  .chart-track{height:8px;background:#f0f2f5;}
+  .chart-value-sub{display:none;}
+  .tag{background:none !important;padding:0;font-weight:500;color:var(--ink-secondary) !important;}
+  .tag-wrap{gap:0 !important;}
+  .tag-wrap .tag + .tag::before{content:"\00b7";margin:0 6px;color:var(--ink-muted);}
+  .acct-selected-chips .tag{font-size:12.5px;}
+  /* quieter tables */
+  th.sortable .arrow{opacity:0 !important;}
+  th.sortable:hover .arrow, th.sortable.active .arrow{opacity:1 !important;}
+  thead th{text-transform:none;letter-spacing:0;font-size:12px;color:var(--ink-secondary);font-weight:600;}
+  tbody td{border-bottom-color:#f1f3f6;}
+  .rep-name{font-weight:500;}
+  .card-head .count{color:#a3abb8;}
+  .note{border-style:solid;border-color:#eceef2;background:transparent;}
+  /* filter bar: Sales Rep, Date and Search up front; the rest behind "More Filters" */
+  /* KPI cards become one strip */
+  .stats, .dash-stats{display:flex !important;gap:0 !important;background:var(--surface-card);border:1px solid #eceef2;border-radius:var(--radius);overflow:hidden;}
+  .stats .stat-card, .dash-stats .stat-card{border:none;border-radius:0;flex:1;min-width:0;border-right:1px solid #eceef2;}
+  .stats .stat-card:last-child, .dash-stats .stat-card:last-child{border-right:none;}
+  @media (max-width:1000px){ .stats, .dash-stats{flex-wrap:wrap;} .stats .stat-card, .dash-stats .stat-card{flex:1 1 45%;border-bottom:1px solid #eceef2;} }
+
+  /* ---- the same look on Rep Home and History ---- */
+  .wrap{max-width:1480px;padding:20px 24px 40px;}
+  .kpis{display:flex;gap:0;background:var(--surface-card);border:1px solid #eceef2;border-radius:var(--radius);overflow:hidden;margin-bottom:16px;}
+  .kpis .kpi{border:none;border-radius:0;flex:1;min-width:0;border-right:1px solid #eceef2;}
+  .kpis .kpi:last-child{border-right:none;}
+  .kpi .l{text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:600;color:var(--ink-secondary);}
+  .kpi .v{font-size:20px;}
+  .kpi .spw{top:34px;}
+  .infobar{background:transparent;border-color:#eceef2;color:var(--ink-secondary);}
+  .infobar b{color:var(--ink-primary);}
+  .fsel b{text-transform:none;letter-spacing:0;font-size:11.5px;font-weight:600;}
+  .acct-selected-label, .chip-pair{text-transform:none;letter-spacing:0;font-size:12.5px;}
+  .stats{margin-bottom:16px;}
+  @media (max-width:1000px){ .kpis{flex-wrap:wrap;} .kpis .kpi{flex:1 1 45%;border-bottom:1px solid #eceef2;} }
+  .card, .stat-card, .kpi{border-color:#eceef2;}
+  .tag-tier + .tag-wrap::before{content:"\00b7";margin:0 6px;color:var(--ink-muted);}
 </style>
 </head>
 <body>
@@ -394,14 +479,21 @@
   </div>
 </div>
 <div class="app"><div class="wrap">
-  <div class="topbar">
-    <div class="hello"><h1 id="hello">Good Morning</h1><p id="helloSub"></p></div>
-    <label class="search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="q" type="search" placeholder="Search Accounts, Orders, SKUs" aria-label="Search accounts, orders and SKUs" autocomplete="off" /><kbd>/</kbd></label>
-    <label class="ctl"><small>Viewing</small><select id="repSel" aria-label="Sales rep"></select></label>
-    <label class="ctl"><small>Period</small><select id="perSel" aria-label="Period"><option value="fytd">This Financial Year</option><option value="12m">Last 12 Months</option></select></label>
-    <span class="status-pill stale" id="dataPill"><span class="dot"></span>Loading</span>
-    <button class="btn menu-btn" id="menuBtn" aria-label="Menu">&#9776; Menu</button>
+  <div class="top">
+    <div><h1 id="hello">Good Morning</h1><p class="subtitle" id="helloSub"></p></div>
+    <div class="top-actions"><span class="status-pill stale" id="dataPill"><span class="dot"></span>Loading</span>
+      <button class="btn menu-btn" id="menuBtn" aria-label="Menu">&#9776; Menu</button></div>
   </div>
+  <div class="fbar" id="fbar">
+    <label class="fctl"><small>Sales Rep</small><select id="repSel" aria-label="Sales rep"></select></label>
+    <label class="fctl"><small>Period</small><select id="perSel" aria-label="Period"><option value="fytd">This Financial Year</option><option value="12m">Last 12 Months</option></select></label>
+    <label class="fctl fsearch"><small>Search</small><input type="search" id="q" placeholder="Account, order no. or SKU" autocomplete="off" /></label>
+    <button type="button" class="btn more-btn" id="fbMoreBtn" aria-expanded="false">More Filters</button>
+    <span class="fbreak"></span>
+    <label class="fctl fsec"><small>Sell Price Tier</small><select id="tierSel" aria-label="Sell price tier"></select></label>
+    <label class="fctl fsec"><small>Payment Mode</small><select id="paySel" aria-label="Payment mode"></select></label>
+  </div>
+  <div class="chips" id="fbChips"></div>
   <div id="root"></div>
 </div></div>
 <div id="drawerRoot"></div>
@@ -484,7 +576,7 @@ async function fetchLive(){
 /* ---------- "today" and the reporting period ---------- */
 let ASOF = HIST.through;
 function setAsOf(){ ASOF = LIVE_OK ? sydneyDate(new Date()) : HIST.through; }
-const state = {rep:'', period:'fytd', q:'', open:null, attAll:false};
+const state = {rep:'', period:'fytd', q:'', tier:'', pay:'', more:false, open:null, attAll:false};
 function period(){
   const e = ASOF; let s;
   if(state.period === 'fytd'){ const y = +e.slice(0,4), m = +e.slice(5,7); s = (m>=7 ? y : y-1) + '-07-01'; }
@@ -577,7 +669,10 @@ function delta(cur, prior){
 }
 const kpi = (label, val, sub, sp) => `<div class="kpi"><div class="l">${esc(label)}</div><div class="v">${val}</div><div class="c">${sub}</div>${sp?`<span class="spw">${sp}</span>`:''}</div>`;
 
-function viewAccts(){ return ACCTS.filter(a => !state.rep || a.bdm === state.rep); }
+const NONE_ = 'Unspecified';
+function viewAccts(){ return ACCTS.filter(a => (!state.rep || a.bdm === state.rep)
+  && (!state.tier || (a.tier||NONE_) === state.tier)
+  && (!state.pay || (state.pay === NONE_ ? a.pays.size === 0 : a.pays.has(state.pay)))); }
 function matchQ(S, q){
   const s = q.trim().toLowerCase(); if(s.length < 2) return true;
   if(S.a.company.toLowerCase().includes(s) || S.a.code.toLowerCase().includes(s)) return true;
@@ -663,10 +758,10 @@ function renderBody(){
   const sp3 = sp1.map((v,i) => sp2[i] ? v/sp2[i] : 0);
   const sp4 = mser(m => SS.filter(S => S.os.some(o => monthIdx(o.d)===m)).length);
   const cmp = (a,b) => b > 0 ? `${delta(a,b)} vs last year` : '<span class="muted">No prior data</span>';
-  const tiles = kpi(periodName() === 'This Financial Year' ? 'Sales This Financial Year' : 'Sales, Last 12 Months', $$(cur), cmp(cur,prv), spark(sp1,70,26,'#2a78d6'))
-    + kpi('Orders', oc.toLocaleString('en-AU'), cmp(oc,op), spark(sp2,70,26,'#7a4ae0'))
-    + kpi('Average Order Value', $$(aov), cmp(aov,aovp), spark(sp3,70,26,'#eb6834'))
-    + kpi('Accounts Ordering (90 Days)', `${ordering} of ${accts.length}`, followUp ? `<span class="muted">${plural(followUp,'account')} need${followUp===1?'s':''} a follow-up</span>` : '<span class="muted">No follow-ups needed</span>', spark(sp4,70,26,'#1baf7a'));
+  const tiles = kpi(periodName() === 'This Financial Year' ? 'Sales This Financial Year' : 'Sales, Last 12 Months', $$(cur), cmp(cur,prv), spark(sp1,70,26,'#4f8fdc'))
+    + kpi('Orders', oc.toLocaleString('en-AU'), cmp(oc,op), spark(sp2,70,26,'#4f8fdc'))
+    + kpi('Average Order Value', $$(aov), cmp(aov,aovp), spark(sp3,70,26,'#4f8fdc'))
+    + kpi('Accounts Ordering (90 Days)', `${ordering} of ${accts.length}`, followUp ? `<span class="muted">${plural(followUp,'account')} need${followUp===1?'s':''} a follow-up</span>` : '<span class="muted">No follow-ups needed</span>', spark(sp4,70,26,'#4f8fdc'));
   // attention
   const all = [...A.act.map(x=>({...x,g:'a'})), ...A.heads.map(x=>({...x,g:'h'})), ...A.good.map(x=>({...x,g:'g'}))];
   const shown = state.attAll ? all : all.slice(0, 6);
@@ -724,8 +819,43 @@ function renderPill(){
   if(LIVE_OK){ el.classList.remove('stale'); el.innerHTML = '<span class="dot"></span>Live Feed To ' + esc(ddmmyyyy(LIVE_LAST || HIST.through)); }
   else { el.classList.add('stale'); el.innerHTML = '<span class="dot"></span>History Only To ' + esc(ddmmyyyy(HIST.through)); }
 }
+function optHTML(all, vals, cur){ return `<option value="">${esc(all)}</option>` + vals.map(v => `<option value="${esc(v)}"${v===cur?' selected':''}>${esc(v)}</option>`).join(''); }
+function renderBar(){
+  const tiers = [...new Set(ACCTS.map(a => a.tier||NONE_))].sort((a,b) => a===NONE_?1:b===NONE_?-1:a.localeCompare(b,undefined,{numeric:true}));
+  const pays = [...new Set([...ACCTS.flatMap(a => [...a.pays.keys()]), NONE_])].sort((a,b) => a===NONE_?1:b===NONE_?-1:a.localeCompare(b));
+  document.getElementById('tierSel').innerHTML = optHTML('All Sell Price Tiers', tiers, state.tier);
+  document.getElementById('paySel').innerHTML = optHTML('All Payment Modes', pays, state.pay);
+  document.getElementById('repSel').value = state.rep;
+  document.getElementById('perSel').value = state.period;
+  const q = document.getElementById('q'); if(document.activeElement !== q) q.value = state.q;
+  const nSec = [state.tier, state.pay].filter(Boolean).length, mb = document.getElementById('fbMoreBtn');
+  mb.textContent = (state.more ? 'Fewer Filters' : 'More Filters') + (nSec ? ' (' + nSec + ' on)' : '');
+  mb.setAttribute('aria-expanded', String(state.more));
+  document.getElementById('fbar').classList.toggle('show-more', state.more);
+  const c = [], add = (k, lab, v) => c.push(`<span class="fchip"><small>${lab}</small>${esc(v)}<button type="button" data-clear="${k}" aria-label="Remove ${lab} filter" title="Remove">×</button></span>`);
+  if(state.rep) add('rep', 'Rep', state.rep);
+  if(state.period !== 'fytd') add('period', 'Period', 'Last 12 Months');
+  if(state.tier) add('tier', 'Tier', state.tier);
+  if(state.pay) add('pay', 'Payment', state.pay);
+  if(state.q.trim()) add('q', 'Search', '"' + state.q.trim() + '"');
+  document.getElementById('fbChips').innerHTML = c.length
+    ? `<span class="chips-label">Active Filters:</span>${c.join('')}${c.length > 1 ? '<button type="button" class="chip-clear" data-clear="all">Clear All</button>' : ''}`
+    : '<span class="chips-label">No Filters, Showing Everything</span>';
+}
+function clearFilter(k){
+  if(k === 'all'){ state.rep = state.tier = state.pay = state.q = ''; state.period = 'fytd'; }
+  else if(k === 'period') state.period = 'fytd';
+  else state[k] = '';
+  if(k === 'all' || k === 'rep'){ try{ localStorage.setItem(REP_KEY, state.rep); }catch(_){} }
+  render();
+}
+document.getElementById('tierSel').addEventListener('change', e => { state.tier = e.target.value; render(); });
+document.getElementById('paySel').addEventListener('change', e => { state.pay = e.target.value; render(); });
+document.getElementById('fbMoreBtn').addEventListener('click', () => { state.more = !state.more; renderBar(); });
+
 function render(){
   buildIndex();
+  renderBar();
   document.getElementById('hello').textContent = greeting();
   document.getElementById('helloSub').textContent = state.rep ? 'Here is what needs your attention today.' : 'Here is what needs attention across all sales reps today.';
   const warn = LIVE_OK ? '' : `<div class="note" style="margin:0 0 14px">The live feed could not be reached, so this page only shows history up to ${esc(ddmmyyyy(HIST.through))} and works out every status as at that date. Reload to try again.</div>`;
@@ -748,6 +878,7 @@ document.addEventListener('mousemove', e => {
 function openAcct(id){ state.open = id; render(); }
 function closeAcct(){ if(state.open == null) return; const id = state.open; state.open = null; render(); const el = document.querySelector(`[data-acct="${id}"]`); if(el) el.focus(); }
 document.addEventListener('click', e => {
+  const fc = e.target.closest('[data-clear]'); if(fc){ clearFilter(fc.dataset.clear); return; }
   const c = e.target.closest('[data-close]'); if(c){ closeAcct(); return; }
   const m = e.target.closest('[data-attall]'); if(m){ state.attAll = !state.attAll; render(); return; }
   const a = e.target.closest('[data-acct]'); if(a){ openAcct(Number(a.dataset.acct)); }
