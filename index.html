@@ -848,6 +848,28 @@ async function addFirstSeen(lines){
   for(const l of lines){ const f = first.get(String(l.order_no)); if(f && !l.order_date) l.first_seen = f; }
 }
 
+/* Customer names arrive exactly as typed in Unleashed ("Timber doors centre pty Ltd",
+   "A1 CUSTOM HOMES", "mandeep kalsi"). Show them in Title Case. Words already in mixed
+   case (MindMaze) and short codes (WHF, ACT, ATF, P/L, T/A) are left as they are.
+   Display only: nothing in the database changes. */
+const NAME_KEEP_UPPER = new Set(['ACT','NSW','VIC','QLD','SA','WA','NT','TAS','ATF','WHF','DDL','MSL','IT','AU','NZ','UK','USA','HVAC','CCTV']);
+const NAME_FIX = {LTD:'Ltd', MR:'Mr', MRS:'Mrs', MS:'Ms', DR:'Dr', ST:'St'};
+const NAME_SMALL = new Set(['and','of','the','for','at','in','on','by','to','or']);
+function niceName(s){
+  if(!s) return s;
+  let n = 0;
+  return String(s).replace(/[A-Za-z0-9][A-Za-z0-9'’]*/g, w => {
+    const first = n++ === 0;
+    const up = w.toUpperCase(), lo = w.toLowerCase();
+    if(/\d/.test(w) || w.length === 1) return w.length === 1 ? up : w;   // A1, single letters (T/A, P/L)
+    if(w !== up && w !== lo) return w;                                   // mixed case: MindMaze, McKenzie
+    if(NAME_FIX[up]) return NAME_FIX[up];
+    if(w === up && (NAME_KEEP_UPPER.has(up) || !/[AEIOUY]/.test(up))) return w;   // WHF, ACT, ATF
+    if(!first && NAME_SMALL.has(lo)) return lo;
+    return up[0] + lo.slice(1);
+  });
+}
+
 async function fetchLatestBatch(){
   const latestRes = await fetch(
     `${SUPA_URL}/rest/v1/${TABLE}?select=batch_id,imported_at&order=imported_at.desc&limit=1`,
@@ -1900,6 +1922,7 @@ async function loadAndRender(){
     const { rows, importedAt, batchId } = await fetchLatestBatch();
     const carried = await safeCarry(rows, batchId, '*');
     LINES = rows.concat(carried);
+    for(const l of LINES) l.customer = niceName(l.customer);   // Title Case names, display only
     await addFirstSeen(LINES);
     rebuildFromLines();
     render();
