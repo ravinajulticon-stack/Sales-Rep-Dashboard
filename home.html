@@ -541,6 +541,103 @@
 </nav>
 <div id="tip"></div>
 <script>
+/* ---------------- Older orders kept after they leave the feed's window ----------------
+   The feed pulls a rolling window from Unleashed (90 days at the moment) and every
+   upload is kept in the database. The pages read the newest upload, so an order
+   disappears once it is older than the window. This adds those orders back from
+   the earlier uploads. Read-only: nothing in the database is changed.
+
+   An order is added back only when it dropped out because of its age:
+     - it is not in the newest upload (the newest upload always wins);
+     - every line was Completed when it was last seen;
+     - it is older than every order in all later uploads (it fell off the back of
+       the window, whatever length the window is);
+     - no newer order of the same customer dropped out at the same time (that
+       means the customer was changed in Unleashed, e.g. moved to another rep).
+   One upload per day is enough for this (the 23:xx UTC one); if the feed's
+   schedule changes, the hour of the newest upload is used instead. */
+async function fetchCarriedLines(latestRows, latestBatchId, cols, signal){
+  if(!latestRows.length || !latestBatchId) return [];
+  const t = v => v ? new Date(v).getTime() : NaN;
+  const done = r => !String(r.status || '').trim() || String(r.status).trim() === 'Completed';
+  const minDone = rows => { let m = Infinity; for(const r of rows){ const x = t(r.completed_date); if(done(r) && x < m) m = x; } return m; };
+  const hdr = {apikey: SUPA_KEY};
+  async function snapshots(hour){
+    const out = [], PAGE = 1000;
+    const like = encodeURIComponent(`*T${hour}:*-n8n`);
+    for(let from = 0; ; from += PAGE){
+      const r = await fetch(`${SUPA_URL}/rest/v1/${TABLE}?select=${cols}&batch_id=like.${like}&order=batch_id.asc,id.asc`,
+        {headers:{...hdr, Range:`${from}-${from+PAGE-1}`, 'Range-Unit':'items'}, signal});
+      if(!r.ok && r.status !== 206) throw new Error('status ' + r.status);
+      const page = await r.json(); out.push(...page);
+      if(page.length < PAGE || out.length >= 100000) break;
+    }
+    return out;
+  }
+  let rows = await snapshots('23');
+  const lastSnap = rows.length ? rows[rows.length-1].imported_at : null;
+  const latestAt = t(latestBatchId.slice(0, 24));
+  if(!lastSnap || latestAt - t(lastSnap) > 3*864e5){
+    const hh = latestBatchId.slice(11, 13);
+    if(hh !== '23') rows = rows.concat(await snapshots(hh)).sort((a, b) => a.batch_id < b.batch_id ? -1 : a.batch_id > b.batch_id ? 1 : (a.id||0) - (b.id||0));
+  }
+
+  // group into uploads, oldest first; the newest upload goes last
+  const ups = [];
+  for(const r of rows){
+    if(r.batch_id === latestBatchId) continue;
+    if(!ups.length || ups[ups.length-1].id !== r.batch_id) ups.push({id:r.batch_id, rows:[]});
+    ups[ups.length-1].rows.push(r);
+  }
+  ups.push({id:latestBatchId, rows:latestRows});
+  for(const u of ups){
+    u.orders = new Map();
+    for(const r of u.rows){ const k = String(r.order_no); if(!u.orders.has(k)) u.orders.set(k, []); u.orders.get(k).push(r); }
+    u.min = minDone(u.rows);
+  }
+  // oldest completed date in each upload and everything after it
+  const after = new Array(ups.length).fill(Infinity);
+  for(let i = ups.length - 2; i >= 0; i--) after[i] = Math.min(ups[i+1].min, after[i+1]);
+
+  const carried = new Map();
+  for(let i = 0; i < ups.length - 1; i++){
+    const cur = ups[i], next = ups[i+1];
+    if(!next.rows.length) { next.orders = cur.orders; next.rows = cur.rows; continue; }   // empty upload: nothing learnt
+    for(const k of next.orders.keys()) carried.delete(k);                            // back in the feed: the feed wins
+    const aged = [], movedCust = new Set();
+    for(const [k, ls] of cur.orders){
+      if(next.orders.has(k)) continue;
+      const old = ls.every(r => done(r) && t(r.completed_date) < after[i]);
+      if(old) aged.push([k, ls]); else movedCust.add(String(ls[0].customer_code || ls[0].customer || ''));
+    }
+    for(const [k, ls] of aged){
+      if(movedCust.has(String(ls[0].customer_code || ls[0].customer || ''))) continue;
+      carried.set(k, ls);
+    }
+  }
+  for(const k of ups[ups.length-1].orders.keys()) carried.delete(k);
+  return [].concat(...carried.values()).map(r => ({...r, carried:true}));
+}
+async function safeCarry(latestRows, latestBatchId, cols){
+  try { return await fetchCarriedLines(latestRows, latestBatchId, cols); }
+  catch(err){ console.error('Older orders not loaded', err); return []; }
+}
+/* Open orders have no completed date, and the feed has no order date yet. Until it
+   does, show when the order first came through in the hourly uploads ("Added"). */
+async function addFirstSeen(lines){
+  const open = [...new Set(lines.filter(l => l.status && String(l.status).trim() !== 'Completed' && !l.order_date).map(l => String(l.order_no)))];
+  if(!open.length) return;
+  const first = new Map();
+  await Promise.all(open.slice(0, 200).map(async o => {
+    try {
+      const r = await fetch(`${SUPA_URL}/rest/v1/${TABLE}?select=imported_at&order_no=eq.${encodeURIComponent(o)}&order=imported_at.asc&limit=1`, {headers:{apikey: SUPA_KEY}});
+      const d = r.ok ? await r.json() : [];
+      if(d.length) first.set(o, d[0].imported_at);
+    } catch(err){ /* leave it blank */ }
+  }));
+  for(const l of lines){ const f = first.get(String(l.order_no)); if(f && !l.order_date) l.first_seen = f; }
+}
+
 /* ===================================================================
    Sales Rep Home — separate, read-only page. It never writes to the database
    and never touches the dashboard's feed. Data = embedded Unleashed history
@@ -609,7 +706,8 @@ async function fetchLive(){
       const page = await rr.json(); rows.push(...page);
       if(page.length < PAGE || rows.length >= 200000) break;
     }
-    return rows;
+    // older orders that have dropped out of the feed's 90-day window (see carry code)
+    return rows.concat(await safeCarry(rows, latest[0].batch_id, 'customer_code,completed_date,status,order_no,product_code,quantity,sub_total,sell_price_tier,payment_mode,batch_id,imported_at'));
   } finally { clearTimeout(to); }
 }
 
