@@ -347,6 +347,15 @@
   /* keep the SKU name next to the code in product bars */
   .chart-label .chart-value-sub{display:inline;margin-left:8px;}
 
+  /* order status tags (open orders are listed but not in the totals) */
+  .ostatus{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:2px 9px;border-radius:100px;white-space:nowrap;}
+  .ostatus .idot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .os-completed{background:#e6f7ec;color:#0a7a35;}
+  .os-placed{background:#e7eefc;color:#0a4fe1;}
+  .os-parked{background:#eef0f3;color:#5b6577;}
+  .os-backordered{background:#fff4e0;color:#8a5b00;}
+  .open-tag{display:inline-block;margin-left:6px;font-size:11.5px;font-weight:600;color:#8a5b00;background:#fff4e0;border-radius:100px;padding:1px 7px;white-space:nowrap;}
+
   /* ===== Colours matched to the Philips MySmartLocks website (navy header, bright blue strip) ===== */
   :root{
     --brand:#0a4fe1; --brand-dark:#011389;
@@ -485,6 +494,7 @@
       <label class="fctl fsec"><small>Warehouse</small><select id="fbWh" aria-label="Warehouse"></select></label>
       <label class="fctl fsec" id="fbPayWrap"><small>Payment Mode</small><select id="fbPay" aria-label="Payment mode"></select></label>
       <label class="fctl fsec"><small>Customer Type</small><select id="fbType" aria-label="Customer type"></select></label>
+      <label class="fctl fsec"><small>Order Status</small><select id="fbStatus" aria-label="Order status"></select></label>
       <label class="fctl fsec" id="fbTierWrap"><small>Sell Price Tier</small><select id="fbTier" aria-label="Sell price tier"></select></label>
       <label class="fctl fsec fchk"><small>Products / SKUs</small><span class="chkline"><input type="checkbox" id="fbProd" /> Product Lines Only</span></label>
     </div>
@@ -938,7 +948,8 @@ function getRangeBounds(key){
 // All lines matching the shared filters (rep/type/warehouse/date/search).
 // The Dashboard's BDM picker and every other page's "Sales Rep" filter both
 // read/write state.rep, so this one function serves them all.
-function filteredLines(){
+function filteredLines(){ return filteredAllLines().filter(l => isCompletedLine(l) && statusOk(l)); }
+function filteredAllLines(){
   const rep = state.rep;
   const q = state.search.trim().toLowerCase();
   const [rangeStart, rangeEnd] = state.dateRange !== 'all' ? getRangeBounds(state.dateRange) : [null, null];
@@ -950,7 +961,8 @@ function filteredLines(){
     if(state.tier && (cleanVal(l.sell_price_tier) || 'Unspecified') !== state.tier) return false;
     if(state.pay && (cleanVal(l.payment_mode) || NO_PAY) !== state.pay) return false;
     if(rangeStart || rangeEnd){
-      const d = l.completed_date ? new Date(l.completed_date) : null;
+      const dd = l.completed_date || l.order_date;   // open orders have no completed date; use the order date once the feed sends it
+      const d = dd ? new Date(dd) : null;
       if(!d) return false;
       if(rangeStart && d < rangeStart) return false;
       if(rangeEnd && d >= rangeEnd) return false;
@@ -1178,7 +1190,7 @@ document.getElementById('fRepSearch').addEventListener('input', e => { state.fil
 
 function renderDashboardPage(){
   const lines = filteredLines();
-  const accounts = aggregateAccounts(lines).sort((a,b) => b.revenue - a.revenue);
+  const accounts = withOpen(aggregateAccounts(lines), openLines()).sort((a,b) => b.revenue - a.revenue);
 
   renderBDMList();
   const repLabelText = state.rep ? (state.rep===NO_REP ? 'No Rep Assigned' : esc(state.rep)) : 'All Reps';
@@ -1190,7 +1202,8 @@ function renderDashboardPage(){
   document.getElementById('dashStatTiles').innerHTML =
     statCardHTML('Total Accounts', accounts.length, null, ICON_BUILDING, '#e8f1fc', '#2a78d6') +
     statCardHTML('Total Purchase', fmtMoney(totalPurchase), null, ICON_MONEY, '#e6f7ec', '#0ca30c') +
-    statCardHTML('Total Orders', totalOrders, null, ICON_CART, '#f2eafd', '#7a4ae0');
+    statCardHTML('Total Orders', totalOrders, null, ICON_CART, '#f2eafd', '#7a4ae0') +
+    openOrdersTile();
 
   document.getElementById('dashAcctCount').textContent = accounts.length + ' account' + (accounts.length===1?'':'s');
   document.getElementById('dashAcctBody').innerHTML = accounts.length ? accounts.map(a => `
@@ -1200,7 +1213,7 @@ function renderDashboardPage(){
       <td>${tierTag(a.tier)}</td>
       <td>${payTagsHTML(a)}</td>
       <td class="num">${fmtMoney(a.revenue)}</td>
-      <td class="num">${a.orders}</td>
+      <td class="num">${a.orders}${openTag(a)}</td>
       <td>${fmtDateOnly(a.last)}</td>
       <td><span class="row-chevron">›</span></td>
     </tr>
@@ -1220,14 +1233,15 @@ function renderDashboardPage(){
     : '';
 
   const acctLines = state.selectedAccount ? lines.filter(l => l.customer === state.selectedAccount) : [];
-  const acctOrders = aggregateOrders(acctLines).sort((a,b) => new Date(b.date) - new Date(a.date));
+  const acctOpen = state.selectedAccount ? openLines().filter(l => l.customer === state.selectedAccount) : [];
+  const acctOrders = markOpen(aggregateOrders(acctOpen), acctOpen).concat(aggregateOrders(acctLines).sort((a,b) => new Date(b.date) - new Date(a.date)));
   document.getElementById('dashOrdersBody').innerHTML = acctOrders.length ? acctOrders.slice(0,8).map(o => `
     <tr>
-      <td>${fmtDateOnly(o.date)}</td>
+      <td>${o.isOpen ? (o.odate ? fmtDateOnly(o.odate) : '—') : fmtDateOnly(o.date)}</td>
       <td>${esc(o.order_no)}</td>
       <td class="num">${fmtMoney(o.revenue)}</td>
       <td class="num">${o.items}</td>
-      <td><span class="badge"><span class="idot"></span>${esc(o.status || 'Completed')}</span></td>
+      <td>${statusBadge(o.isOpen ? o.status : 'Completed')}</td>
       <td>${payTag(o.payment)}</td>
     </tr>
   `).join('') : '<tr class="empty-row"><td colspan="6">No orders for this account.</td></tr>';
@@ -1296,6 +1310,8 @@ function renderAcctChart(accounts, elId, countElId){
 
 function renderAccountsPage(lines, accounts){
   renderStatsInto('acctStatTiles', lines);
+  document.getElementById('acctStatTiles').insertAdjacentHTML('beforeend', openOrdersTile());
+  accounts = withOpen(accounts, openLines());
   renderRepChart(accounts, 'repChart', 'repChartCount');
   renderAcctChart(accounts, 'acctChart', 'acctChartCount');
   const sorted = sortRows(accounts, state.acctSort, ACCOUNT_GETTERS);
@@ -1307,7 +1323,7 @@ function renderAccountsPage(lines, accounts){
       <td>${esc(a.customer)}</td>
       <td>${tierTag(a.tier)}</td>
       <td>${payTagsHTML(a)}</td>
-      <td class="num">${a.orders}</td>
+      <td class="num">${a.orders}${openTag(a)}</td>
       <td class="num">${fmtMoney(a.revenue)}</td>
       <td>${fmtDateOnly(a.last)}</td>
       <td><span class="row-chevron">›</span></td>
@@ -1389,8 +1405,14 @@ function renderOrdersPage(orders, lines){
     statCardHTML('Total Orders', orders.length, 'orders placed', ICON_CART, '#e8f1fc', '#2a78d6') +
     statCardHTML('Line Items', items, 'total lines', ICON_PRODUCT, '#e6f7ec', '#0ca30c') +
     statCardHTML('Order Value', fmtMoney(revenue), 'total value (AUD)', ICON_MONEY, '#f2eafd', '#7a4ae0') +
-    statCardHTML('Customers', customers, 'unique customers', ICON_PEOPLE, '#fdeaf0', '#e35a86');
+    statCardHTML('Customers', customers, 'unique customers', ICON_PEOPLE, '#fdeaf0', '#e35a86') +
+    openOrdersTile();
 
+  // Open orders (Placed, Parked, Backordered) are listed too, with their status,
+  // but are not in the totals above: those stay completed sales only.
+  const ol0 = openLines();
+  lines = lines.concat(ol0);
+  orders = orders.concat(markOpen(aggregateOrders(ol0), ol0));
   const byOrder = new Map();
   for(const l of lines){ if(!byOrder.has(l.order_no)) byOrder.set(l.order_no, []); byOrder.get(l.order_no).push(l); }
   const sorted = sortRows(orders, state.orderSort, ORDER_GETTERS);
@@ -1404,7 +1426,7 @@ function renderOrdersPage(orders, lines){
       <td>${esc(o.order_no)}</td>
       <td>${esc(o.customer)}</td>
       <td><span class="rep-dot" style="background:${REP_COLOR[o.repKey]}"></span>${esc(o.rep)}</td>
-      <td>${fmtDate(o.date)}</td>
+      <td>${o.isOpen ? openDateCell(o) : fmtDate(o.date)}</td>
       <td>${skuCell(o.products)}</td>
       <td>${payTag(o.payment)}</td>
       <td class="num">${o.qty}</td>
@@ -1414,7 +1436,7 @@ function renderOrdersPage(orders, lines){
     const ol = byOrder.get(o.order_no) || [];
     return main + `
     <tr class="order-detail"><td colspan="9">
-      <div class="od-meta"><span>Warehouse: <b>${esc(o.warehouse)}</b></span><span>Customer Type: <b>${esc(o.customer_type)}</b></span><span>Status: <b>${esc(o.status || 'Completed')}</b></span><span>Lines: <b>${o.items}</b></span></div>
+      <div class="od-meta"><span>Warehouse: <b>${esc(o.warehouse)}</b></span><span>Customer Type: <b>${esc(o.customer_type)}</b></span><span>Status: ${statusBadge(o.status)}</span>${o.isOpen && o.odate ? `<span>Order Date: <b>${fmtDateOnly(o.odate)}</b></span>` : ''}<span>Lines: <b>${o.items}</b></span></div>
       <table class="od-lines">
         <thead><tr><th>SKU</th><th>SKU Name</th><th class="num">Qty</th><th class="num">Sub Total</th></tr></thead>
         <tbody>${ol.map(l => `<tr><td>${esc(l.product_code || '—')}</td><td>${esc(skuName(l.product_code))}</td><td class="num">${l.quantity || 0}</td><td class="num">${fmtMoney(l.sub_total)}</td></tr>`).join('')}</tbody>
@@ -1576,6 +1598,59 @@ const SHARED_REP_KEY = 'ddl_home_rep';
 function savedRep(){ try { return localStorage.getItem(SHARED_REP_KEY); } catch(err){ return null; } }
 function saveRep(){ try { localStorage.setItem(SHARED_REP_KEY, state.rep); } catch(err){ /* best-effort only */ } }
 
+/* ---- Order status ----
+   The feed sends Completed orders plus open ones (Placed, Parked, Backordered),
+   which Alicia wants visible. Every total, chart and account/product figure stays
+   COMPLETED sales only; open orders are counted separately (Open Orders) and
+   listed with their status. Open orders have no completed date; once the feed
+   sends order_date it is used for them instead. */
+const OPEN_STATUSES = ['Placed', 'Parked', 'Backordered'];
+const ORDER_STATUS_OPTIONS = [['', 'All Statuses'], ['Completed', 'Completed'], ['open', 'Open (Placed, Parked, Backordered)'], ['Placed', 'Placed'], ['Parked', 'Parked'], ['Backordered', 'Backordered']];
+state.ostatus = '';
+function lineStatus(l){ const s = cleanVal(l.status); return s || 'Completed'; }
+function isCompletedLine(l){ return lineStatus(l) === 'Completed'; }
+function isOpenLine(l){ return OPEN_STATUSES.includes(lineStatus(l)); }
+function statusOk(l){
+  if(!state.ostatus) return true;
+  if(state.ostatus === 'open') return isOpenLine(l);
+  return lineStatus(l) === state.ostatus;
+}
+function openLines(){ return filteredAllLines().filter(l => isOpenLine(l) && statusOk(l)); }
+function markOpen(orders, lines){
+  return orders.map(o => {
+    const l = lines.find(x => x.order_no === o.order_no) || {};
+    return {...o, isOpen:true, status: lineStatus(l), odate: l.order_date || null};
+  });
+}
+function statusBadge(s){
+  s = s || 'Completed';
+  return `<span class="ostatus os-${esc(s.toLowerCase())}"><span class="idot"></span>${esc(s)}</span>`;
+}
+function openDateCell(o){ return statusBadge(o.status) + (o.odate ? ` <span class="hint">ordered ${fmtDateOnly(o.odate)}</span>` : ''); }
+function openOrdersSummary(){
+  const ol = openLines();
+  return {n: new Set(ol.map(l => l.order_no)).size, v: ol.reduce((s,l) => s + (l.sub_total||0), 0)};
+}
+function openOrdersTile(){
+  const o = openOrdersSummary();
+  return statCardHTML('Open Orders', o.n, o.n ? fmtMoney(o.v) + ' not yet completed' : 'none open', ICON_CART, '#fff4e0', '#c98a05');
+}
+// Accounts list: completed figures as before, plus how many open orders each has.
+// An account whose only orders are still open is listed too, with $0 completed.
+function withOpen(accounts, open){
+  const map = new Map(accounts.map(a => [a.repKey + '||' + a.customer, {...a, openOrders:0, openValue:0}]));
+  for(const o of aggregateAccounts(open)){
+    const k = o.repKey + '||' + o.customer;
+    let a = map.get(k);
+    if(!a){ a = {...o, orders:0, qty:0, revenue:0, last:null, openOrders:0, openValue:0}; map.set(k, a); }
+    a.openOrders = o.orders; a.openValue = o.revenue;
+  }
+  return [...map.values()];
+}
+function openTag(a){
+  return a.openOrders ? ` <span class="open-tag" title="${a.openOrders} open order${a.openOrders===1?'':'s'}, ${fmtMoney(a.openValue)} not yet completed">+${a.openOrders} open</span>` : '';
+}
+
 const PAGE_SIZE = 25;
 state.account = '';
 state.pg = {accounts:0, orders:0, products:0};
@@ -1601,7 +1676,7 @@ function optionsHTML(allLabel, values, current, labelFn){
     `<option value="${esc(v)}"${v === current ? ' selected' : ''}>${esc(labelFn ? labelFn(v) : v)}</option>`).join('');
 }
 function renderFilterBar(){
-  const nSec = [state.warehouse, state.pay, state.type, state.tier, state.productLinesOnly].filter(Boolean).length;
+  const nSec = [state.warehouse, state.pay, state.type, state.tier, state.ostatus, state.productLinesOnly].filter(Boolean).length;
   const mb = document.getElementById('fbMoreBtn');
   mb.textContent = (state.moreFilters ? 'Fewer Filters' : 'More Filters') + (nSec ? ' (' + nSec + ' on)' : '');
   mb.setAttribute('aria-expanded', String(!!state.moreFilters));
@@ -1612,6 +1687,7 @@ function renderFilterBar(){
   document.getElementById('fbType').innerHTML = optionsHTML('All Customer Types', ALL_TYPES, state.type);
   document.getElementById('fbPay').innerHTML = optionsHTML('All Payment Modes', ALL_PAYS, state.pay);
   document.getElementById('fbTier').innerHTML = optionsHTML('All Sell Price Tiers', ALL_TIERS, state.tier);
+  document.getElementById('fbStatus').innerHTML = ORDER_STATUS_OPTIONS.map(([v,t]) => `<option value="${v}"${state.ostatus === v ? ' selected' : ''}>${t}</option>`).join('');
   document.getElementById('fbPayWrap').hidden = !HAS_PAY;
   document.getElementById('fbTierWrap').hidden = !HAS_TIER;
   document.getElementById('fbCustom').hidden = state.dateRange !== 'custom';
@@ -1637,6 +1713,7 @@ function renderChips(){
   if(state.pay) add('pay', 'Payment', state.pay);
   if(state.type) add('type', 'Type', state.type);
   if(state.tier) add('tier', 'Tier', state.tier);
+  if(state.ostatus) add('ostatus', 'Status', (ORDER_STATUS_OPTIONS.find(o => o[0] === state.ostatus) || ['', state.ostatus])[1]);
   if(state.search.trim()) add('search', 'Search', '"' + state.search.trim() + '"');
   if(state.productLinesOnly) add('productLinesOnly', 'SKUs', 'Product Lines Only');
   document.getElementById('fbChips').innerHTML = c.length
@@ -1645,7 +1722,7 @@ function renderChips(){
 }
 function clearFilter(key){
   if(key === 'all'){
-    Object.assign(state, {rep:'', account:'', dateRange:'all', customStart:'', customEnd:'', warehouse:'', pay:'', type:'', tier:'', search:'', productLinesOnly:false, selectedAccount:null});
+    Object.assign(state, {rep:'', account:'', dateRange:'all', customStart:'', customEnd:'', warehouse:'', pay:'', type:'', tier:'', ostatus:'', search:'', productLinesOnly:false, selectedAccount:null});
   } else if(key === 'date'){ state.dateRange = 'all'; state.customStart = ''; state.customEnd = ''; }
   else if(key === 'productLinesOnly'){ state.productLinesOnly = false; }
   else if(key === 'rep'){ state.rep = ''; state.selectedAccount = null; }
@@ -1662,7 +1739,7 @@ function openAccountOrders(customer){
   window.scrollTo(0, 0);
 }
 
-[['fbRep','rep'], ['fbDate','dateRange'], ['fbWh','warehouse'], ['fbType','type'], ['fbPay','pay'], ['fbTier','tier']].forEach(([id, key]) => {
+[['fbRep','rep'], ['fbDate','dateRange'], ['fbWh','warehouse'], ['fbType','type'], ['fbPay','pay'], ['fbTier','tier'], ['fbStatus','ostatus']].forEach(([id, key]) => {
   document.getElementById(id).addEventListener('change', e => {
     state[key] = e.target.value;
     if(key === 'rep'){ state.selectedAccount = null; saveRep(); }

@@ -497,6 +497,7 @@ function mergeLive(rows){
   for(const r of rows){
     const a = BY_CODE.get(String(r.customer_code||'').trim().toLowerCase());
     if(!a || !r.completed_date) continue;
+    if(r.status && String(r.status).trim() !== 'Completed') continue;   // open orders (Placed, Parked, Backordered) are not sales yet
     const d = sydneyDate(new Date(r.completed_date));
     const tier = String(r.sell_price_tier||'').trim();
     if(tier && d >= a.tierAt){ a.tier = tier; a.tierAt = d; }
@@ -517,7 +518,7 @@ async function fetchLive(){
     if(!latest.length) return [];
     const rows = [], PAGE = 1000;
     for(let from = 0; ; from += PAGE){
-      const rr = await fetch(`${SUPA_URL}/rest/v1/${TABLE}?select=customer_code,completed_date,order_no,product_code,quantity,sub_total,customer_type,sell_price_tier,payment_mode&batch_id=eq.${encodeURIComponent(latest[0].batch_id)}&order=id.asc`,
+      const rr = await fetch(`${SUPA_URL}/rest/v1/${TABLE}?select=customer_code,completed_date,status,order_no,product_code,quantity,sub_total,customer_type,sell_price_tier,payment_mode&batch_id=eq.${encodeURIComponent(latest[0].batch_id)}&order=id.asc`,
         {headers:{...hdr, Range:`${from}-${from+PAGE-1}`, 'Range-Unit':'items'}, signal:ctl.signal});
       if(!rr.ok && rr.status !== 206) throw new Error('status ' + rr.status);
       const page = await rr.json(); rows.push(...page);
