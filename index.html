@@ -356,6 +356,11 @@
   .os-backordered{background:#fff4e0;color:#8a5b00;}
   .open-tag{display:inline-block;margin-left:6px;font-size:11.5px;font-weight:600;color:#8a5b00;background:#fff4e0;border-radius:100px;padding:1px 7px;white-space:nowrap;}
 
+  /* accounts with no orders (from the Unleashed customer list) */
+  .none-tag{display:inline-block;margin-left:6px;font-size:11.5px;font-weight:600;color:#5b6577;background:#eef0f3;border-radius:100px;padding:1px 7px;white-space:nowrap;}
+  #needsBdmCard{margin-top:16px;}
+  #needsBdmCard .card-head h2::after{content:"";}
+
   /* ===== Colours matched to the Philips MySmartLocks website (navy header, bright blue strip) ===== */
   :root{
     --brand:#0a4fe1; --brand-dark:#011389;
@@ -495,6 +500,7 @@
       <label class="fctl fsec" id="fbPayWrap"><small>Payment Mode</small><select id="fbPay" aria-label="Payment mode"></select></label>
       <label class="fctl fsec"><small>Customer Type</small><select id="fbType" aria-label="Customer type"></select></label>
       <label class="fctl fsec"><small>Order Status</small><select id="fbStatus" aria-label="Order status"></select></label>
+      <label class="fctl fsec" id="fbActWrap" hidden><small>Accounts</small><select id="fbActivity" aria-label="Accounts with or without orders"></select></label>
       <label class="fctl fsec" id="fbTierWrap"><small>Sell Price Tier</small><select id="fbTier" aria-label="Sell price tier"></select></label>
       <label class="fctl fsec fchk"><small>Products / SKUs</small><span class="chkline"><input type="checkbox" id="fbProd" /> Product Lines Only</span></label>
     </div>
@@ -583,6 +589,10 @@
         </table>
         </div>
         <div class="pager" id="acctPager"></div>
+      </div>
+      <div class="card" id="needsBdmCard" hidden>
+        <div class="card-head"><h2>New Accounts Needing A BDM</h2><span class="count" id="needsBdmCount"></span></div>
+        <div class="table-scroll"><table class="tbl-compact"><thead><tr><th>Created</th><th>Customer</th><th>Customer Code</th><th>Customer Type</th></tr></thead><tbody id="needsBdmBody"></tbody></table></div>
       </div>
     </div>
 
@@ -868,6 +878,49 @@ function niceName(s){
     if(!first && NAME_SMALL.has(lo)) return lo;
     return up[0] + lo.slice(1);
   });
+}
+
+/* ---------------- Every assigned account (Mark's customer feed) ----------------
+   Orders only tell the dashboard about accounts that have bought something. Once the
+   Unleashed customer list comes through (table sales_customers), every account with a
+   BDM is listed too, at $0 when it has no orders. Until that table exists this does
+   nothing and the pages work exactly as before. Read-only. */
+let CUSTOMERS = [];
+const CUST_TABLE = 'sales_customers';
+async function fetchCustomers(){
+  try {
+    const h = {apikey: SUPA_KEY};
+    const PAGE = 1000;
+    async function readAll(filter){
+      const out = [];
+      for(let from = 0; ; from += PAGE){
+        const r = await fetch(`${SUPA_URL}/rest/v1/${CUST_TABLE}?select=*${filter}`, {headers:{...h, Range:`${from}-${from+PAGE-1}`, 'Range-Unit':'items'}});
+        if(!r.ok && r.status !== 206) return null;
+        const p = await r.json(); out.push(...p);
+        if(p.length < PAGE || out.length >= 200000) break;
+      }
+      return out;
+    }
+    let rows = null;
+    const lr = await fetch(`${SUPA_URL}/rest/v1/${CUST_TABLE}?select=batch_id&order=imported_at.desc&limit=1`, {headers:h});
+    if(lr.ok){
+      const latest = await lr.json();
+      if(!latest.length) return [];
+      rows = await readAll(`&batch_id=eq.${encodeURIComponent(latest[0].batch_id)}`);
+    } else if(lr.status === 400){
+      rows = await readAll('');            // no batch columns: the table holds just the current list
+    }
+    if(!rows) return [];                   // table not there yet
+    const v = x => (x == null ? '' : String(x)).trim();
+    const yes = x => x === true || /^(true|yes|y|1)$/i.test(v(x));
+    return rows.filter(c => !yes(c.obsolete)).map(c => ({
+      customer_code: v(c.customer_code),
+      customer: niceName(v(c.customer ?? c.customer_name)),
+      rep_name: v(c.rep_name ?? c.sales_person),
+      customer_type: v(c.customer_type) || 'Unspecified',
+      created: v(c.created_date ?? c.created_on) || null,
+    })).filter(c => c.customer);
+  } catch(err){ console.error('Customer list not loaded', err); return []; }
 }
 
 async function fetchLatestBatch(){
@@ -1309,7 +1362,7 @@ document.getElementById('fRepSearch').addEventListener('input', e => { state.fil
 
 function renderDashboardPage(){
   const lines = filteredLines();
-  const accounts = withOpen(aggregateAccounts(lines), openLines()).sort((a,b) => b.revenue - a.revenue);
+  const accounts = activityFilter(withCustomers(withOpen(aggregateAccounts(lines), openLines()))).sort((a,b) => b.revenue - a.revenue);
 
   renderBDMList();
   const repLabelText = state.rep ? (state.rep===NO_REP ? 'No Rep Assigned' : esc(state.rep)) : 'All Reps';
@@ -1319,7 +1372,7 @@ function renderDashboardPage(){
   const totalPurchase = accounts.reduce((s,a) => s + a.revenue, 0);
   const totalOrders = new Set(lines.map(l => l.order_no)).size;
   document.getElementById('dashStatTiles').innerHTML =
-    statCardHTML('Total Accounts', accounts.length, null, ICON_BUILDING, '#e8f1fc', '#2a78d6') +
+    statCardHTML('Total Accounts', accounts.filter(a => !a.stub).length, noOrdersSub(accounts), ICON_BUILDING, '#e8f1fc', '#2a78d6') +
     statCardHTML('Total Purchase', fmtMoney(totalPurchase), null, ICON_MONEY, '#e6f7ec', '#0ca30c') +
     statCardHTML('Total Orders', totalOrders, null, ICON_CART, '#f2eafd', '#7a4ae0') +
     openOrdersTile();
@@ -1433,6 +1486,7 @@ function renderAccountsPage(lines, accounts){
   accounts = withOpen(accounts, openLines());
   renderRepChart(accounts, 'repChart', 'repChartCount');
   renderAcctChart(accounts, 'acctChart', 'acctChartCount');
+  accounts = activityFilter(withCustomers(accounts));   // every BDM account, $0 when no orders (once the customer feed exists)
   const sorted = sortRows(accounts, state.acctSort, ACCOUNT_GETTERS);
   const p = pageSlice('accounts', sorted);
   document.getElementById('acctTableCount').innerHTML = sorted.length + ' account' + (sorted.length===1?'':'s') + (sorted.length ? ' <span class="hint">· click a row to see its orders</span>' : '');
@@ -1450,6 +1504,7 @@ function renderAccountsPage(lines, accounts){
   `).join('') : '<tr class="empty-row"><td colspan="8">No accounts match the current filters.</td></tr>';
   document.getElementById('acctPager').innerHTML = pagerHTML('accounts', p, 'account');
   renderFeedNote();
+  renderNeedsBdm();
 }
 
 // Tells the viewer (once, plainly) when Sell Price Tier / Payment Mode haven't started
@@ -1904,6 +1959,110 @@ document.addEventListener('click', e => {
   };
 })();
 
+/* ---- Every assigned account (needs Mark's customer feed; see fetchCustomers) ---- */
+state.activity = '';
+const ACTIVITY_OPTIONS = [['', 'All Accounts'], ['ordered', 'With Orders'], ['none', 'No Orders']];
+let LAST_BY_CODE = new Map(), LAST_BY_NAME = new Map();
+function indexLastOrders(){
+  LAST_BY_CODE = new Map(); LAST_BY_NAME = new Map();
+  for(const l of LINES){
+    if(!isCompletedLine(l) || !l.completed_date) continue;
+    const k = String(l.customer_code || '').trim().toLowerCase();
+    if(k && (!LAST_BY_CODE.has(k) || l.completed_date > LAST_BY_CODE.get(k))) LAST_BY_CODE.set(k, l.completed_date);
+    if(!LAST_BY_NAME.has(l.customer) || l.completed_date > LAST_BY_NAME.get(l.customer)) LAST_BY_NAME.set(l.customer, l.completed_date);
+  }
+}
+// Warehouse, payment, tier, status and SKU filters are about order lines, so accounts
+// with no orders only join the list when none of those are on.
+function lineOnlyFilters(){ return !!(state.warehouse || state.pay || state.tier || state.ostatus || state.productLinesOnly); }
+function withCustomers(accounts){
+  if(!CUSTOMERS.length || lineOnlyFilters()) return accounts;
+  const codes = new Set(accounts.map(a => String(a.customer_code || '').trim().toLowerCase()).filter(Boolean));
+  const names = new Set(accounts.map(a => a.customer));
+  const q = state.search.trim().toLowerCase();
+  const out = accounts.slice();
+  for(const c of CUSTOMERS){
+    if(!c.rep_name || !ALL_REP_KEYS.includes(c.rep_name)) continue;          // BDM accounts only
+    const code = c.customer_code.toLowerCase();
+    if((code && codes.has(code)) || names.has(c.customer)) continue;          // already listed with orders
+    if(state.rep && c.rep_name !== state.rep) continue;
+    if(state.account && c.customer !== state.account) continue;
+    if(state.type && c.customer_type !== state.type) continue;
+    if(q && !(c.customer.toLowerCase().includes(q) || code.includes(q))) continue;
+    const ever = (code && LAST_BY_CODE.get(code)) || LAST_BY_NAME.get(c.customer) || null;
+    out.push({repKey: c.rep_name, rep: c.rep_name, customer: c.customer, customer_code: c.customer_code, customer_type: c.customer_type,
+      orders: 0, qty: 0, revenue: 0, last: ever, tier: '', payment: '', payModes: [], openOrders: 0, openValue: 0, stub: true, everOrdered: !!ever});
+    if(code) codes.add(code); names.add(c.customer);
+  }
+  return out;
+}
+function activityFilter(accounts){
+  if(state.activity === 'ordered') return accounts.filter(a => !a.stub);
+  if(state.activity === 'none') return accounts.filter(a => a.stub);
+  return accounts;
+}
+function noOrdersTag(a){
+  if(!a.stub) return '';
+  return a.everOrdered
+    ? ` <span class="none-tag" title="Has ordered before, but not in the selected period">None In Period</span>`
+    : ` <span class="none-tag" title="Assigned to ${esc(a.rep)} in Unleashed, no orders yet">No Orders Yet</span>`;
+}
+(function(){
+  const orig = openTag;
+  openTag = function(a){ return orig(a) + noOrdersTag(a); };
+})();
+function noOrdersSub(accounts){
+  const n = accounts.filter(a => a.stub).length;
+  return n ? `+${n} with no orders` : null;
+}
+// New Unleashed accounts with no Sales Person yet (they won't show anywhere until one is set).
+function renderNeedsBdm(){
+  const card = document.getElementById('needsBdmCard');
+  if(!card) return;
+  const since = Date.now() - 90 * 864e5;
+  const q = state.search.trim().toLowerCase();
+  const rows = (state.rep ? [] : CUSTOMERS).filter(c => !c.rep_name && c.created && new Date(c.created).getTime() >= since)
+    .filter(c => (!state.type || c.customer_type === state.type) && (!q || c.customer.toLowerCase().includes(q) || c.customer_code.toLowerCase().includes(q)))
+    .sort((a, b) => (b.created > a.created ? 1 : -1));
+  card.hidden = !rows.length;
+  if(!rows.length) return;
+  document.getElementById('needsBdmCount').textContent = rows.length + ' account' + (rows.length === 1 ? '' : 's') + ' · created in the last 90 days';
+  document.getElementById('needsBdmBody').innerHTML = rows.slice(0, 25).map(c => `
+    <tr><td>${fmtDateOnly(c.created)}</td><td>${esc(c.customer)}</td><td>${esc(c.customer_code || '—')}</td><td>${esc(c.customer_type)}</td></tr>`).join('')
+    + (rows.length > 25 ? `<tr class="empty-row"><td colspan="4">and ${rows.length - 25} more</td></tr>` : '');
+}
+(function(){
+  const fb = window.renderFilterBar;
+  renderFilterBar = function(){
+    fb();
+    const w = document.getElementById('fbActWrap');
+    w.hidden = !CUSTOMERS.length;
+    document.getElementById('fbActivity').innerHTML = ACTIVITY_OPTIONS.map(([v, t]) => `<option value="${v}"${state.activity === v ? ' selected' : ''}>${t}</option>`).join('');
+    if(state.activity){
+      const mb = document.getElementById('fbMoreBtn');
+      const n = [state.warehouse, state.pay, state.type, state.tier, state.ostatus, state.productLinesOnly, state.activity].filter(Boolean).length;
+      mb.textContent = (state.moreFilters ? 'Fewer Filters' : 'More Filters') + ' (' + n + ' on)';
+    }
+  };
+  const rc = window.renderChips;
+  renderChips = function(){
+    rc();
+    if(!state.activity) return;
+    const box = document.getElementById('fbChips');
+    const label = (ACTIVITY_OPTIONS.find(o => o[0] === state.activity) || ['', state.activity])[1];
+    const chip = `<span class="fchip"><small>Accounts</small>${esc(label)}<button type="button" data-clear="activity" aria-label="Remove Accounts filter" title="Remove">×</button></span>`;
+    if(box.querySelector('.fchip')) box.querySelector('.chips-label').insertAdjacentHTML('afterend', chip);
+    else box.innerHTML = `<span class="chips-label">Active Filters:</span>${chip}`;
+  };
+  const cf = window.clearFilter;
+  clearFilter = function(key){ if(key === 'all') state.activity = ''; cf(key); };
+})();
+document.getElementById('fbActivity').addEventListener('change', e => { state.activity = e.target.value; resetPaging(); render(); });
+(function(){
+  const orig = payTagsHTML;
+  payTagsHTML = function(a){ return a && a.stub ? '<span class="tag-none">—</span>' : orig(a); };
+})();
+
 function describeAge(iso){
   if(!iso) return 'No Data Imported Yet';
   const ms = Date.now() - new Date(iso).getTime();
@@ -1920,10 +2079,12 @@ async function loadAndRender(){
   setStatusPill('Loading…', false);
   try {
     const { rows, importedAt, batchId } = await fetchLatestBatch();
-    const carried = await safeCarry(rows, batchId, '*');
+    const [carried, custs] = await Promise.all([safeCarry(rows, batchId, '*'), fetchCustomers()]);
+    CUSTOMERS = custs;
     LINES = rows.concat(carried);
     for(const l of LINES) l.customer = niceName(l.customer);   // Title Case names, display only
     await addFirstSeen(LINES);
+    indexLastOrders();
     rebuildFromLines();
     render();
     const stale = importedAt && (Date.now() - new Date(importedAt).getTime()) > 1000*60*60*24*14; // 14 days
