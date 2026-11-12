@@ -512,7 +512,7 @@ function render(anim){
   app.className = `app ${ST.edit ? 'editing' : ''} ${anim ? 'anim' : ''}`;
   const stale = IMPORTED_AT && (Date.now() - new Date(IMPORTED_AT)) > 14*864e5;
   app.innerHTML = `<nav class="nav"><div class="brand"><i></i><span>Sales Rep<br>Dashboard</span></div>${nav.map(([k,l,h]) => `<a class="${k === ST.page ? 'on' : ''}" href="${h}">${ico(k)}<span>${l}</span></a>`).join('')}
-    <small>MORE VIEWS</small><a href="home.html">${ico('home')}<span>Rep Home</span></a><a href="history.html">${ico('history')}<span>History</span></a><span class="sp"></span><span class="div"></span><a data-act="signout">${ico('out')}<span>Sign Out</span></a></nav>
+    <small>MORE VIEWS</small><a href="new-home.html">${ico('home')}<span>Rep Home</span></a><a href="new-history.html">${ico('history')}<span>History</span></a><span class="sp"></span><span class="div"></span><a data-act="signout">${ico('out')}<span>Sign Out</span></a></nav>
   <main class="body">
     <div class="head"><div><h2>${P.t}<span class="prevtag">New Design Preview</span></h2><p>${P.s}</p></div><span class="sp"></span>
       <span class="live ${stale || ST.loadErr ? 'stale' : ''}" title="${esc(ST.loadErr || (IMPORTED_AT ? 'Last upload ' + new Date(IMPORTED_AT).toLocaleString('en-AU') : ''))}"><b></b>${ST.loadErr ? 'Could Not Load Data' : ageText()}</span>
