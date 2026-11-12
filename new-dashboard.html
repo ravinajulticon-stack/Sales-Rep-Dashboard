@@ -28,6 +28,16 @@ button,input,select{font:inherit}
 .rchip{display:flex;align-items:center;gap:8px;background:var(--panel);border:1.5px solid transparent;border-radius:100px;padding:5px 13px 5px 5px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--ink);transition:.2s;box-shadow:var(--shadow)}.rchip:hover{transform:translateY(-1px)}.rchip.on{border-color:var(--amber);box-shadow:0 0 0 3px rgba(245,158,11,.22)}.rchip.all{padding-left:14px}
 .av{width:26px;height:26px;border-radius:50%;color:#fff;font:700 11px/26px Inter,Arial;text-align:center;flex-shrink:0;display:inline-block}
 .dsel{appearance:none;background:var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a4f5c' stroke-width='3'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;border:none;border-radius:100px;padding:8px 32px 8px 14px;font-size:12.5px;font-weight:600;color:var(--ink);box-shadow:var(--shadow);cursor:pointer}
+.fbar{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-end;background:var(--panel);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow);margin-bottom:8px}
+.fctl{display:flex;flex-direction:column;gap:4px;flex:0 1 210px;min-width:150px}.fctl small{font-size:11.5px;font-weight:600;color:var(--ink2)}
+.fctl select,.fctl input{width:100%;min-width:0;border:1.5px solid #e6e6e2;border-radius:10px;padding:8px 10px;background:#fff;color:var(--ink);font-size:13px;outline:none}.fctl select:focus,.fctl input:focus{border-color:var(--amber)}
+.fctl.fs{flex:1 1 260px}.fbar .fsec{display:none;flex:1 1 160px}.fbar.more .fsec{display:flex}.fbreak{flex-basis:100%;height:0}.fbar:not(.more) .fbreak{display:none}
+.fbar .fcust{display:none;gap:10px;flex:1 1 300px}.fbar .fcust.on{display:flex}
+.chk{display:flex;align-items:center;gap:7px;height:37px;font-size:13px;cursor:pointer;white-space:nowrap}.chk input{width:auto;accent-color:#2b3240}
+.morebtn{align-self:flex-end;border:1.5px solid #e6e6e2;background:#fff;border-radius:10px;padding:8px 13px;font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap;color:var(--ink)}.morebtn.on{border-color:var(--accent);background:var(--accent);color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 16px;font-size:12.5px;min-height:26px}.chips .lbl{color:var(--muted);font-weight:600;margin-right:4px}
+.fchip{display:inline-flex;align-items:center;gap:6px;background:#fff4e0;color:#5c3d00;border-radius:100px;padding:3px 4px 3px 11px;font-weight:600}.fchip small{color:#a66300;font-weight:600;font-size:11.5px}.fchip button{border:none;background:rgba(166,99,0,.15);color:#5c3d00;width:18px;height:18px;border-radius:50%;cursor:pointer;line-height:18px;font-size:13px;padding:0}
+.clearall{border:none;background:none;color:var(--ink2);font-weight:700;cursor:pointer;font-size:12.5px;text-decoration:underline}
 .editbar{display:none;align-items:center;gap:10px;background:rgba(245,158,11,.12);border:1.5px dashed var(--amber);border-radius:12px;padding:8px 12px;margin-bottom:14px;font-size:12.5px}.editing .editbar{display:flex}.editbar b{flex:1}
 /* ---------- widget grid ---------- */
 .grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-auto-rows:var(--row);grid-auto-flow:row dense;gap:var(--gap)}
@@ -84,8 +94,8 @@ table.t{width:100%;border-collapse:collapse;font-size:12px}table.t th{text-align
 }
 @container app (max-width: 640px){
   .nav{display:none}.body{padding:14px 12px 92px}
-  .head h2{font-size:20px}.head p,.search,.prevtag{display:none}
-  .filters{flex-wrap:wrap}.dsel{order:-1}
+  .head h2{font-size:20px}.head p,.prevtag{display:none}
+  .fctl,.fctl.fs,.fbar .fsec{flex:1 1 100%}.fbar .fcust.on{flex:1 1 100%}.morebtn{flex:1 1 100%}
   .grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:auto}
   .w{grid-column:span 2!important;grid-row:auto!important;min-height:calc(var(--h) * 60px)}
   .w[data-s="3"]{grid-column:span 1!important;min-height:122px}.w[data-s="3"] .kpi .v{font-size:20px}.w[data-s="3"] .wh{padding:11px 12px 2px}.w[data-s="3"] .wb{padding:2px 12px 11px}
@@ -337,7 +347,7 @@ const ICON = {
 const ico = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg>`;
 
 /* ======================= state ======================= */
-const ST = {rep:'', range:'fy', q:'', edit:false, drawer:false, trend:'stacked', acctF:'All', loadErr:''};
+const ST = {rep:'', range:'all', from:'', to:'', wh:'', pay:'', type:'', tier:'', ost:'', act:'', prod:false, more:false, q:'', edit:false, drawer:false, trend:'stacked', acctF:'All', loadErr:''};
 try { const r = localStorage.getItem(REP_KEY); if(r !== null) ST.rep = r === '__none__' ? 'No Rep Assigned' : r; } catch(e){}
 const WDEF = [['k_sales',3,2],['k_orders',3,2],['k_accts',3,2],['k_open',3,2],['trend',8,4],['leader',4,4],['accounts',8,5],['feed',4,5],['skus',4,4],['heat',8,4],['calendar',6,4,1],['opp',6,4,1],['pipeline',12,5,1]];
 const SIZES = [3,4,6,8,12];
@@ -351,15 +361,17 @@ const saveLayout = () => { try { localStorage.setItem(LAYOUT_KEY, JSON.stringify
 const saveRep = () => { try { localStorage.setItem(REP_KEY, ST.rep === NO_REP ? '__none__' : ST.rep); } catch(e){} };
 
 /* ======================= model ======================= */
-const RANGES = [['fy','This Financial Year'],['all','All Time'],['month','This Month'],['last','Last Month'],['90','Last 90 Days']];
+const RANGES = [['all','All Time'],['fy','This Financial Year'],['week','This Week'],['month','This Month'],['last','Last Month'],['custom','Custom Range']];
 function bounds(k){
   const now = new Date(), y = now.getFullYear(), m = now.getMonth();
   if(k === 'fy') return [new Date(m >= 6 ? y : y-1, 6, 1), null];
   if(k === 'month') return [new Date(y, m, 1), null];
   if(k === 'last') return [new Date(y, m-1, 1), new Date(y, m, 1)];
-  if(k === '90') return [new Date(now - 90*864e5), null];
+  if(k === 'week'){ const d = now.getDay(), s = new Date(y, m, now.getDate() + (d === 0 ? -6 : 1 - d)); return [s, new Date(s.getFullYear(), s.getMonth(), s.getDate() + 7)]; }
+  if(k === 'custom'){ const s = ST.from ? new Date(ST.from + 'T00:00:00') : null; let e = ST.to ? new Date(ST.to + 'T00:00:00') : null; if(e) e = new Date(e.getFullYear(), e.getMonth(), e.getDate() + 1); return [s, e]; }
   return [null, null];
 }
+const lineOnly = () => !!(ST.wh || ST.pay || ST.tier || ST.ost || ST.prod);
 function groupOrders(lines){
   const m = new Map();
   for(const l of lines){ const k = l.order_no; let o = m.get(k);
@@ -372,10 +384,13 @@ function model(opts = {}){
   const q = ST.q.trim().toLowerCase();
   const repOk = l => opts.allReps || !ST.rep || repOf(l) === ST.rep;
   const qOk = l => !q || cv(l.customer).toLowerCase().includes(q) || cv(l.order_no).toLowerCase().includes(q) || cv(l.product_code).toLowerCase().includes(q);
-  const base = LINES.filter(l => repOk(l) && qOk(l));
+  const U = 'Unspecified';
+  const fOk = l => (!ST.wh || (cv(l.warehouse) || U) === ST.wh) && (!ST.pay || (cv(l.payment_mode) || U) === ST.pay) && (!ST.type || (cv(l.customer_type) || U) === ST.type) && (!ST.tier || (cv(l.sell_price_tier) || U) === ST.tier);
+  const base = LINES.filter(l => repOk(l) && qOk(l) && fOk(l));
+  const doneSt = !ST.ost || ST.ost === 'Completed', openSt = l => !ST.ost || ST.ost === 'open' || cv(l.status) === ST.ost;
   const [a, b] = bounds(ST.range);
   const inR = l => { const d = dateOf(l); if(!d) return !a && !b; const t = new Date(d); return (!a || t >= a) && (!b || t < b); };
-  const doneAll = base.filter(isDone), done = doneAll.filter(inR), open = base.filter(isOpenL);
+  const doneAll = base.filter(l => isDone(l) && doneSt), done = doneAll.filter(inR), open = base.filter(l => isOpenL(l) && openSt(l));
   const orders = groupOrders(done), openOrders = groupOrders(open);
   // months shown on charts: from the range start (or first order) to the range end (or now), at most 12
   const first = a || (doneAll.length ? new Date(doneAll.reduce((m,l) => dateOf(l) < m ? dateOf(l) : m, dateOf(doneAll[0]))) : new Date());
@@ -389,9 +404,10 @@ function model(opts = {}){
   for(const l of doneAll){ const k = l.customer; let x = acc.get(k); if(!x){ x = {cust:k, code:l.customer_code, rep:repOf(l), rev:0, orders:new Set(), last:null}; acc.set(k, x); }
     const d = dateOf(l); if(d && (!x.last || d > x.last)) x.last = d; if(inR(l)){ x.rev += l.sub_total || 0; x.orders.add(l.order_no); } }
   let accts = [...acc.values()].map(x => ({...x, orders:x.orders.size, d:x.last ? daysSince(x.last) : null}));
-  if(CUSTOMERS.length && !q){ const have = new Set(accts.map(x => cv(x.code).toLowerCase()));
+  if(CUSTOMERS.length && !q && !lineOnly()){ const have = new Set(accts.map(x => cv(x.code).toLowerCase()));
     for(const c of CUSTOMERS){ if(!REPS.includes(c.rep_name) || (ST.rep && !opts.allReps && c.rep_name !== ST.rep)) continue; if(have.has(c.customer_code.toLowerCase())) continue;
       accts.push({cust:c.customer, code:c.customer_code, rep:c.rep_name, rev:0, orders:0, last:null, d:null, none:true}); } }
+  if(ST.act === 'ordered') accts = accts.filter(x => !x.none); else if(ST.act === 'none') accts = accts.filter(x => x.none || !x.orders);
   accts.sort((x,y) => y.rev - x.rev || (x.d ?? 9999) - (y.d ?? 9999));
   const total = done.reduce((s,l) => s + (l.sub_total||0), 0);
   // this month vs last month, whatever the date range
@@ -449,7 +465,7 @@ const W = {
      ...M.accts.filter(a => a.d > 60).sort((a,b) => b.d - a.d).map(a => ({ic:'warn', c:'rgba(229,72,77,.13)', col:'#d92d32', t:a.cust, s:`No order for ${a.d} days · ${a.rep}`, a:a.cust})),
      ...M.orders.filter(o => o.date && daysSince(o.date) <= 7).sort((a,b) => a.date < b.date ? 1 : -1).map(o => ({ic:'check', c:'rgba(23,178,106,.15)', col:'#0f8a5c', t:`New order ${o.no}`, s:`${o.cust} · ${money(o.val)}`, a:o.cust}))];
    return it.map(x => `<div class="row click" data-act="acct" data-v="${esc(x.a)}" style="align-items:flex-start"><span class="ic" style="background:${x.c};color:${x.col}">${ico(x.ic)}</span><div style="min-width:0"><div style="font-weight:700;font-size:12.5px">${esc(x.t)}</div><div style="font-size:11px;color:var(--muted)">${esc(x.s)}</div></div></div>`).join('') || '<div class="empty">Nothing needs attention right now.</div>'; }},
- skus:{t:'Top SKUs', sub:() => 'units sold', r(M){ const m = new Map(); for(const l of M.done){ if(!isProduct(l.product_code)) continue; const x = m.get(l.product_code) || {u:0, v:0}; x.u += l.quantity || 0; x.v += l.sub_total || 0; m.set(l.product_code, x); }
+ skus:{t:'Top SKUs', sub:() => 'units sold', r(M){ const m = new Map(); for(const l of M.done){ if(!cv(l.product_code) || (ST.prod && !isProduct(l.product_code))) continue;   /* as on the current dashboard: Product Lines Only hides install / delivery lines */ const x = m.get(l.product_code) || {u:0, v:0}; x.u += l.quantity || 0; x.v += l.sub_total || 0; m.set(l.product_code, x); }
    const p = [...m].sort((a,b) => b[1].u - a[1].u || b[1].v - a[1].v).slice(0, 10), mx = p.length ? p[0][1].u : 1;
    return p.map(([k,x]) => `<div style="margin-bottom:9px" data-tip="<b>${esc(k)}</b><br>${x.u} units · ${money(x.v)}"><div style="display:flex;justify-content:space-between;font-size:12px;gap:8px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(k)}</span><b>${x.u}</b></div><div class="bar"><i style="width:${x.u/mx*100}%;background:linear-gradient(90deg,#2b3240,#f59e0b)"></i></div></div>`).join('') || '<div class="empty">No products sold in this period.</div>'; }},
  heat:{t:'Rep × Month', sub:() => 'darker = more sales', r(){ const A = model({allReps:true}); const ms = A.ms.slice(-6), off = A.ms.length - ms.length, rows = REPS.filter(r => r !== NO_REP || A.done.some(l => repOf(l) === NO_REP));
@@ -484,11 +500,9 @@ function render(anim){
     <small>MORE VIEWS</small><a href="home.html">${ico('home')}<span>Rep Home</span></a><a href="history.html">${ico('history')}<span>History</span></a><span class="sp"></span><a data-act="signout">${ico('out')}<span>Sign Out</span></a></nav>
   <main class="body">
     <div class="head"><div><h2>Sales Dashboard<span class="prevtag">New Design Preview</span></h2><p>Your accounts, orders and SKUs at a glance</p></div><span class="sp"></span>
-      <label class="search">${ico('search')}<input id="q" type="search" placeholder="Search customer, order no. or SKU" value="${esc(ST.q)}" autocomplete="off"></label>
       <span class="live ${stale || ST.loadErr ? 'stale' : ''}" title="${esc(ST.loadErr || (IMPORTED_AT ? 'Last upload ' + new Date(IMPORTED_AT).toLocaleString('en-AU') : ''))}"><b></b>${ST.loadErr ? 'Could Not Load Data' : ageText()}</span>
       <button class="btn ${ST.edit ? 'amber' : 'dark'}" id="btnEdit" data-act="edit">${ST.edit ? '✓ Done' : '✎ Customise'}</button></div>
-    <div class="filters"><div class="reps"><span class="rchip all ${!ST.rep ? 'on' : ''}" data-act="rep" data-v="">All Reps</span>${REPS.map(r => `<span class="rchip ${ST.rep === r ? 'on' : ''}" data-act="rep" data-v="${esc(r)}">${avatar(r)}${esc(r)}</span>`).join('')}</div>
-      <select class="dsel" id="range" aria-label="Date range">${RANGES.map(([k,l]) => `<option value="${k}" ${ST.range === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+    ${filterBar()}
     <div class="editbar"><b>Customising your layout: drag ⠿ to move a panel, ✕ to hide it. It's saved in this browser.</b><button class="btn" data-act="drawer">＋ Panels</button><button class="btn" data-act="reset">Reset</button><button class="btn amber" data-act="edit">Done</button></div>
     <div class="grid" id="grid">${M ? items.map((it,i) => { const w = W[it.id]; return `<div class="w ${w.hero ? 'hero' : ''}" data-id="${it.id}" data-s="${it.w}" style="--w:${it.w};--h:${it.h};--i:${i}">
       <div class="wh">${ST.edit ? '<span class="handle" title="Drag to move">⠿</span>' : ''}<h4>${w.t}</h4>${w.tools ? w.tools() : `<small>${esc(w.sub())}</small>`}${ST.edit ? `<button class="wx" data-act="hide" data-v="${it.id}" title="Hide">✕</button>` : ''}</div><div class="wb">${w.r(M)}</div></div>`; }).join('')
@@ -505,6 +519,44 @@ function fitCharts(M){ if(!M) return; document.querySelectorAll('.fit').forEach(
 let _rz; addEventListener('resize', () => { clearTimeout(_rz); _rz = setTimeout(() => { if(LINES.length) fitCharts(model()); }, 150); });
 function countUp(){ app.querySelectorAll('[data-count]').forEach(el => { const to = +el.dataset.count, isM = el.dataset.fmt === 'money', t0 = performance.now(), dur = 800;
   const step = t => { const p = Math.min((t - t0)/dur, 1), e = 1 - Math.pow(1-p, 3), v = to*e; el.textContent = isM ? money(v) : Math.round(v); if(p < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }); }
+
+/* ---------- filter bar (same filters as the current dashboard) ---------- */
+const OST = [['','All Statuses'],['Completed','Completed'],['open','Open (Placed, Parked, Backordered)'],['Placed','Placed'],['Parked','Parked'],['Backordered','Backordered']];
+const ACT = [['','All Accounts'],['ordered','With Orders'],['none','No Orders']];
+const opts = (all, vals, cur, fmt) => `<option value="">${all}</option>` + vals.map(v => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(fmt ? fmt(v) : v)}</option>`).join('');
+const uniq = f => [...new Set(LINES.map(f))].sort((a,b) => a === 'Unspecified' ? 1 : b === 'Unspecified' ? -1 : a.localeCompare(b, undefined, {numeric:true}));
+function filterBar(){
+  const U = 'Unspecified', hasPay = LINES.some(l => cv(l.payment_mode)), hasTier = LINES.some(l => cv(l.sell_price_tier));
+  const nSec = [ST.wh, ST.pay, ST.type, ST.tier, ST.ost, ST.act, ST.prod].filter(Boolean).length;
+  const sel = (id, label, html, cls = '') => `<label class="fctl ${cls}"><small>${label}</small><select id="${id}" aria-label="${label}">${html}</select></label>`;
+  const bar = `<div class="fbar ${ST.more ? 'more' : ''}">
+    ${sel('fRep','Sales Rep', opts('All Sales Reps', REPS, ST.rep))}
+    ${sel('fRange','Date Range', RANGES.map(([k,l]) => `<option value="${k}" ${ST.range === k ? 'selected' : ''}>${l}</option>`).join(''))}
+    <span class="fcust ${ST.range === 'custom' ? 'on' : ''}"><label class="fctl"><small>From</small><input type="date" id="fFrom" value="${ST.from}"></label><label class="fctl"><small>To</small><input type="date" id="fTo" value="${ST.to}"></label></span>
+    <label class="fctl fs"><small>Search</small><input id="q" type="search" placeholder="Customer, order no. or SKU" value="${esc(ST.q)}" autocomplete="off"></label>
+    <button type="button" class="morebtn ${ST.more ? 'on' : ''}" data-act="more">${ST.more ? 'Fewer Filters' : 'More Filters'}${nSec ? ' (' + nSec + ' on)' : ''}</button>
+    <span class="fbreak"></span>
+    ${sel('fWh','Warehouse', opts('All Warehouses', uniq(l => cv(l.warehouse) || U), ST.wh), 'fsec')}
+    ${hasPay ? sel('fPay','Payment Mode', opts('All Payment Modes', uniq(l => cv(l.payment_mode) || U), ST.pay), 'fsec') : ''}
+    ${sel('fType','Customer Type', opts('All Customer Types', uniq(l => cv(l.customer_type) || U), ST.type), 'fsec')}
+    ${sel('fOst','Order Status', OST.map(([v,t]) => `<option value="${v}" ${ST.ost === v ? 'selected' : ''}>${t}</option>`).join(''), 'fsec')}
+    ${CUSTOMERS.length ? sel('fAct','Accounts', ACT.map(([v,t]) => `<option value="${v}" ${ST.act === v ? 'selected' : ''}>${t}</option>`).join(''), 'fsec') : ''}
+    ${hasTier ? sel('fTier','Sell Price Tier', opts('All Sell Price Tiers', uniq(l => cv(l.sell_price_tier) || U), ST.tier), 'fsec') : ''}
+    <label class="fctl fsec"><small>Products / SKUs</small><span class="chk"><input type="checkbox" id="fProd" ${ST.prod ? 'checked' : ''}> Product Lines Only</span></label>
+  </div>`;
+  const c = [], add = (k, l, v) => c.push(`<span class="fchip"><small>${l}</small>${esc(v)}<button type="button" data-act="clear" data-v="${k}" aria-label="Remove ${l} filter">×</button></span>`);
+  if(ST.rep) add('rep', 'Rep', ST.rep);
+  if(ST.range !== 'all') add('range', 'Date', ST.range === 'custom' ? (ST.from ? fdate(ST.from + 'T00:00:00') : '…') + ' → ' + (ST.to ? fdate(ST.to + 'T00:00:00') : '…') : RLABEL());
+  if(ST.wh) add('wh', 'Warehouse', ST.wh); if(ST.pay) add('pay', 'Payment', ST.pay); if(ST.type) add('type', 'Type', ST.type);
+  if(ST.ost) add('ost', 'Status', OST.find(o => o[0] === ST.ost)[1]); if(ST.act) add('act', 'Accounts', ACT.find(o => o[0] === ST.act)[1]);
+  if(ST.tier) add('tier', 'Tier', ST.tier); if(ST.q.trim()) add('q', 'Search', '"' + ST.q.trim() + '"'); if(ST.prod) add('prod', 'SKUs', 'Product Lines Only');
+  return bar + `<div class="chips">${c.length ? `<span class="lbl">Active Filters:</span>${c.join('')}${c.length > 1 ? '<button type="button" class="clearall" data-act="clear" data-v="all">Clear All</button>' : ''}` : '<span class="lbl">No Filters, Showing Everything</span>'}</div>`;
+}
+function clearFilter(k){
+  if(k === 'all') Object.assign(ST, {rep:'', range:'all', from:'', to:'', wh:'', pay:'', type:'', tier:'', ost:'', act:'', prod:false, q:''});
+  else if(k === 'range'){ ST.range = 'all'; ST.from = ''; ST.to = ''; } else if(k === 'prod') ST.prod = false; else ST[k] = '';
+  if(k === 'all' || k === 'rep') saveRep(); render(true);
+}
 
 /* ---------- account panel ---------- */
 function openAccount(name){
@@ -533,7 +585,10 @@ function showPanel(on){ document.getElementById('panel').classList.toggle('open'
 let dragId = null;
 function wire(){
   const q = document.getElementById('q'); if(q) q.oninput = e => { ST.q = e.target.value; clearTimeout(wire._t); wire._t = setTimeout(() => { const pos = q.selectionStart; render(); const n = document.getElementById('q'); n.focus(); n.setSelectionRange(pos, pos); }, 180); };
-  const rg = document.getElementById('range'); if(rg) rg.onchange = e => { ST.range = e.target.value; render(true); };
+  const on = (id, f) => { const el = document.getElementById(id); if(el) el.onchange = e => { f(e.target); render(true); }; };
+  on('fRep', t => { ST.rep = t.value; saveRep(); }); on('fRange', t => { ST.range = t.value; }); on('fFrom', t => { ST.from = t.value; }); on('fTo', t => { ST.to = t.value; });
+  on('fWh', t => { ST.wh = t.value; }); on('fPay', t => { ST.pay = t.value; }); on('fType', t => { ST.type = t.value; }); on('fOst', t => { ST.ost = t.value; });
+  on('fAct', t => { ST.act = t.value; }); on('fTier', t => { ST.tier = t.value; }); on('fProd', t => { ST.prod = t.checked; });
   if(!ST.edit) return;
   document.querySelectorAll('#grid .w').forEach(w => {
     const hd = w.querySelector('.handle'); if(hd){ hd.addEventListener('pointerdown', () => { w.draggable = true; }); hd.addEventListener('pointerup', () => { w.draggable = false; }); }
@@ -548,6 +603,8 @@ document.addEventListener('click', e => {
   if(e.target.id === 'scrim'){ showPanel(false); return; }
   const a = e.target.closest('[data-act]'); if(!a) return; const k = a.dataset.act, v = a.dataset.v;
   if(k === 'rep'){ ST.rep = ST.rep === v ? '' : v; saveRep(); render(); }
+  else if(k === 'more'){ ST.more = !ST.more; render(); }
+  else if(k === 'clear'){ clearFilter(v); }
   else if(k === 'trend'){ ST.trend = v; render(true); }
   else if(k === 'acctF'){ ST.acctF = v; render(); }
   else if(k === 'acct'){ openAccount(v); }
