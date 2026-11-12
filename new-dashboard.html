@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sales Rep Dashboard (New Design Preview)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+:root{--bg:#f3f3f1;--panel:#fff;--ink:#14123a;--ink2:#4a4f5c;--muted:#8a8f9c;--accent:#2b3240;--amber:#f59e0b;--grid:#efefec;--track:#f0f0ed;--shadow:0 1px 2px rgba(17,24,39,.04),0 10px 28px rgba(17,24,39,.07);--hover:0 2px 4px rgba(17,24,39,.06),0 18px 40px rgba(17,24,39,.13);--hero:linear-gradient(135deg,#111827,#2b3240 58%,#f59e0b);--radius:20px;--gap:14px;--row:80px}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,"Segoe UI",system-ui,Arial,sans-serif}
+button,input,select{font:inherit}
+.wrap{container-type:inline-size;container-name:app;min-height:100vh}
+.app{display:flex;min-height:100vh}
+/* ---------- side panel (Midnight) ---------- */
+.nav{width:212px;flex-shrink:0;background:linear-gradient(180deg,#0b0f1a,#161c2c);padding:18px 12px;display:flex;flex-direction:column;gap:3px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:14px;margin:0 6px 20px;color:#fff;line-height:1.2}.brand i{width:32px;height:32px;border-radius:10px;background:var(--hero);display:inline-block;position:relative;flex-shrink:0}.brand i::after{content:"";position:absolute;inset:8px;border:2.5px solid #fff;border-radius:50%;border-right-color:transparent}
+.nav a{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:11px;color:#a9b1c6;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:.2s}.nav a:hover{background:rgba(255,255,255,.07);color:#fff}.nav a.on{background:var(--amber);color:#14123a;box-shadow:0 6px 18px rgba(245,158,11,.35)}
+.nav a svg{width:17px;height:17px;flex-shrink:0}.nav small{font-size:10px;letter-spacing:.08em;color:#6b7389;margin:14px 10px 4px;font-weight:700}.nav .ext{margin-left:auto;font-size:10px;opacity:.6}
+.nav .sp{flex:1}
+/* ---------- main ---------- */
+.body{flex:1;min-width:0;padding:22px 24px 30px;position:relative}
+.head{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}.head h2{margin:0;font-size:23px;letter-spacing:-.01em}.head p{margin:1px 0 0;color:var(--ink2);font-size:12.5px}.head .sp{flex:1}
+.prevtag{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8a5b00;background:#fff4e0;border-radius:100px;padding:3px 9px;margin-left:8px;vertical-align:4px}
+.search{display:flex;align-items:center;gap:8px;background:var(--panel);border-radius:12px;padding:0 12px;min-width:240px;box-shadow:var(--shadow)}.search input{border:none;outline:none;background:none;padding:9px 0;width:100%;color:var(--ink);font-size:13px}.search svg{width:15px;height:15px;color:var(--muted);flex-shrink:0}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:#0f8a5c;background:rgba(26,168,116,.12);padding:6px 11px;border-radius:100px;white-space:nowrap}.live b{width:7px;height:7px;border-radius:50%;background:#17b26a;animation:pulse 1.8s infinite}.live.stale{color:#b42318;background:#fdecea}.live.stale b{background:#e5484d}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(23,178,106,.6)}70%{box-shadow:0 0 0 8px rgba(23,178,106,0)}100%{box-shadow:0 0 0 0 rgba(23,178,106,0)}}
+.btn{border:none;border-radius:11px;padding:8px 13px;font-weight:700;font-size:12.5px;cursor:pointer;background:var(--panel);color:var(--ink);box-shadow:var(--shadow);white-space:nowrap}.btn.dark{background:var(--accent);color:#fff}.btn.amber{background:var(--amber);color:#14123a}
+.filters{display:flex;gap:8px;margin-bottom:16px;align-items:center}
+.reps{display:flex;gap:8px;overflow-x:auto;padding:3px 3px 5px;scrollbar-width:none;flex:1;min-width:0}
+.rchip{display:flex;align-items:center;gap:8px;background:var(--panel);border:1.5px solid transparent;border-radius:100px;padding:5px 13px 5px 5px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--ink);transition:.2s;box-shadow:var(--shadow)}.rchip:hover{transform:translateY(-1px)}.rchip.on{border-color:var(--amber);box-shadow:0 0 0 3px rgba(245,158,11,.22)}.rchip.all{padding-left:14px}
+.av{width:26px;height:26px;border-radius:50%;color:#fff;font:700 11px/26px Inter,Arial;text-align:center;flex-shrink:0;display:inline-block}
+.dsel{appearance:none;background:var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a4f5c' stroke-width='3'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;border:none;border-radius:100px;padding:8px 32px 8px 14px;font-size:12.5px;font-weight:600;color:var(--ink);box-shadow:var(--shadow);cursor:pointer}
+.editbar{display:none;align-items:center;gap:10px;background:rgba(245,158,11,.12);border:1.5px dashed var(--amber);border-radius:12px;padding:8px 12px;margin-bottom:14px;font-size:12.5px}.editing .editbar{display:flex}.editbar b{flex:1}
+/* ---------- widget grid ---------- */
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-auto-rows:var(--row);grid-auto-flow:row dense;gap:var(--gap)}
+.w{grid-column:span var(--w);grid-row:span var(--h);background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;min-width:0;min-height:0;position:relative;transition:box-shadow .25s,transform .25s}
+.w:hover{box-shadow:var(--hover);transform:translateY(-2px)}
+.wh{display:flex;align-items:center;gap:8px;padding:13px 15px 4px}.wh h4{margin:0;font-size:13.5px;font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.wh small{color:var(--muted);font-size:11px;white-space:nowrap}
+.wb{flex:1;min-height:0;padding:4px 15px 13px;overflow:auto;scrollbar-width:thin}
+.handle,.wx{display:none}
+.editing .w{outline:2px dashed rgba(43,50,64,.35);outline-offset:-2px;transform:none!important}
+.editing .handle{display:inline-flex;cursor:grab;color:var(--muted);font-size:15px;letter-spacing:-2px;user-select:none}.editing .wx{display:inline-flex;border:none;background:var(--track);color:var(--ink2);width:22px;height:22px;border-radius:7px;align-items:center;justify-content:center;cursor:pointer;font-size:13px}
+.w.dragging{opacity:.35}.w.drop-before{box-shadow:-5px 0 0 var(--amber),var(--shadow)}.w.drop-after{box-shadow:5px 0 0 var(--amber),var(--shadow)}
+/* ---------- widget content ---------- */
+.kpi{display:flex;flex-direction:column;justify-content:space-between;height:100%}.kpi .v{font-size:27px;font-weight:800;letter-spacing:-.02em;line-height:1.1}.kpi .s{font-size:11.5px;color:var(--ink2);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.up{color:#0f9d63;font-weight:700}.down{color:#e5484d;font-weight:700}
+.w.hero{background:var(--hero);color:#fff}.w.hero .wh small,.w.hero .s{color:rgba(255,255,255,.85)}.w.hero .up{color:#b6ffd9}.w.hero .down{color:#ffc9c9}
+.row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--grid);font-size:12.5px}.row:last-child{border-bottom:none}.row .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.row b{white-space:nowrap}.row.click{cursor:pointer;border-radius:8px}.row.click:hover{background:#f7f7f5}
+.bar{height:6px;border-radius:4px;background:var(--track);overflow:hidden;margin-top:4px}.bar i{display:block;height:100%;border-radius:4px}
+.tag{font-size:10.5px;font-weight:700;border-radius:100px;padding:2px 8px;white-space:nowrap}.g{color:#0f8a5c;background:rgba(23,178,106,.14)}.a{color:#a66300;background:rgba(245,158,11,.18)}.r{color:#d92d32;background:rgba(229,72,77,.13)}.k{color:#2b3240;background:#ebebe7}.n{color:#5b6577;background:#eef0f3}
+.seg{display:inline-flex;background:var(--track);border-radius:9px;padding:2px}.seg button{border:none;background:none;color:var(--ink2);font-weight:600;font-size:11px;padding:3px 9px;border-radius:7px;cursor:pointer}.seg button.on{background:var(--accent);color:#fff}
+.ic{width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.ic svg{width:15px;height:15px}
+.minis{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.minis button{border:1.5px solid #e6e6e2;background:#fff;color:var(--ink2);border-radius:100px;padding:3px 10px;font-weight:600;font-size:11.5px;cursor:pointer}.minis button.on{border-color:var(--accent);color:var(--ink);background:#f6f6f3}
+.kan{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;height:100%}.kcol{background:var(--track);border-radius:14px;padding:9px;min-height:0;overflow:auto}.kcol h5{margin:2px 4px 9px;font-size:12px;display:flex;justify-content:space-between}.kc{background:#fff;border-radius:11px;padding:9px 10px;margin-bottom:8px;font-size:12px;border-left:3px solid;box-shadow:var(--shadow);cursor:pointer}.kc .m{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-top:3px}
+.empty{color:var(--muted);font-size:12px;text-align:center;padding:20px 8px;border:1.5px dashed #e3e3de;border-radius:12px}
+.hm{display:grid;gap:4px;font-size:11.5px}.hm div{border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;min-height:32px}.hm .lb{justify-content:flex-start;font-weight:600;background:none!important;min-width:0;white-space:nowrap;overflow:hidden}
+.cal{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.cal h6{margin:0 0 5px;font-size:11.5px;color:var(--ink2)}.cg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.cg span{aspect-ratio:1;border-radius:4px;background:var(--track);font-size:8.5px;color:var(--muted);display:flex;align-items:center;justify-content:center}.cg span.x{color:#fff;font-weight:800}
+svg .gl{stroke:var(--grid)}svg .ax{fill:var(--muted);font-size:10px}svg .lb{fill:var(--ink);font-size:10.5px;font-weight:700}
+.tip{position:fixed;pointer-events:none;background:#14123a;color:#fff;font-size:11.5px;padding:6px 9px;border-radius:8px;z-index:99;display:none;max-width:280px;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+/* ---------- motion ---------- */
+.anim .w{animation:rise .55s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i) * 45ms)}@keyframes rise{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+.anim .draw{stroke-dasharray:1400;stroke-dashoffset:1400;animation:draw 1.3s .25s ease forwards}@keyframes draw{to{stroke-dashoffset:0}}
+.anim .grow{transform-box:fill-box;transform-origin:bottom;animation:grow .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(.2s + var(--d,0) * 60ms)}@keyframes grow{from{transform:scaleY(0)}}
+.anim .bar i{animation:fill .9s cubic-bezier(.2,.8,.2,1) both .2s}@keyframes fill{from{width:0}}
+.skel .w>*{visibility:hidden}.skel .w{background:linear-gradient(100deg,#fff 30%,#f1f1ee 50%,#fff 70%) 0 0/300% 100%;animation:shim 1s linear infinite}@keyframes shim{to{background-position:-150% 0}}
+@media (prefers-reduced-motion:reduce){.anim .w,.anim .draw,.anim .grow,.anim .bar i{animation:none!important;stroke-dashoffset:0}.live b{animation:none}}
+/* ---------- slide-over panels ---------- */
+.scrim{position:fixed;inset:0;background:rgba(11,15,26,.35);opacity:0;pointer-events:none;transition:.3s;z-index:40}.scrim.open{opacity:1;pointer-events:auto}
+.panel{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:100%;background:#fff;box-shadow:-12px 0 40px rgba(0,0,0,.18);padding:18px;transform:translateX(105%);transition:transform .35s cubic-bezier(.2,.8,.2,1);z-index:41;overflow:auto}.panel.open{transform:none}
+.panel h3{margin:0;font-size:17px}.panel .x{border:none;background:var(--track);width:30px;height:30px;border-radius:9px;cursor:pointer;font-size:15px}
+.minik{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.minik div{background:var(--bg);border-radius:12px;padding:9px 11px}.minik small{color:var(--ink2);font-size:11px}.minik b{display:block;font-size:16px}
+table.t{width:100%;border-collapse:collapse;font-size:12px}table.t th{text-align:left;color:var(--ink2);font-weight:600;font-size:11px;padding:6px 6px;border-bottom:1px solid var(--grid)}table.t td{padding:7px 6px;border-bottom:1px solid var(--grid)}table.t .rt{text-align:right}
+.wl{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid #ecece8;border-radius:12px;margin-bottom:7px;font-size:12.5px}.wl span{flex:1}
+.tg{width:36px;height:20px;border-radius:20px;background:#dcdcd6;position:relative;cursor:pointer;transition:.2s;flex-shrink:0;border:none}.tg::after{content:"";position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}.tg.on{background:var(--amber)}.tg.on::after{left:18px}
+.sizes{display:flex;gap:3px}.sizes button{border:1px solid #e3e3de;background:#fff;color:var(--ink2);font-weight:700;font-size:10px;padding:2px 6px;border-radius:5px;cursor:pointer}.sizes button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+/* ---------- sign in ---------- */
+.auth{position:fixed;inset:0;background:radial-gradient(circle at 20% 10%,#2b3240,transparent 50%),linear-gradient(160deg,#0b0f1a,#161c2c);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}.auth[hidden]{display:none}
+.authcard{background:#fff;border-radius:22px;padding:28px;width:360px;max-width:100%;box-shadow:0 30px 80px rgba(0,0,0,.4)}.authcard h1{margin:12px 0 4px;font-size:20px}.authcard p{margin:0 0 18px;color:var(--ink2);font-size:13px}
+.authcard label{font-size:12px;font-weight:600;color:var(--ink2)}.authcard input{width:100%;border:1.5px solid #e3e3de;border-radius:11px;padding:10px 12px;margin:6px 0 14px;outline:none}.authcard input:focus{border-color:var(--amber)}.authcard button{width:100%;border:none;border-radius:11px;padding:11px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}.autherr{color:#d92d32;font-size:12.5px;min-height:18px;margin:8px 0 0}
+.bottomnav{display:none}
+/* ---------- tablet / phone ---------- */
+@container app (max-width: 1100px){
+  .nav{width:70px;padding:16px 9px}.nav a{justify-content:center;padding:10px}.nav a span,.nav small,.brand span,.nav .ext{display:none}.brand{justify-content:center;margin:0 0 16px}
+  .grid{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .w[data-s="3"],.w[data-s="4"]{grid-column:span 3}.w[data-s="6"],.w[data-s="8"],.w[data-s="12"]{grid-column:span 6}
+}
+@container app (max-width: 640px){
+  .nav{display:none}.body{padding:14px 12px 92px}
+  .head h2{font-size:20px}.head p,.search,.prevtag{display:none}
+  .filters{flex-wrap:wrap}.dsel{order:-1}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:auto}
+  .w{grid-column:span 2!important;grid-row:auto!important;min-height:calc(var(--h) * 60px)}
+  .w[data-s="3"]{grid-column:span 1!important;min-height:122px}.w[data-s="3"] .kpi .v{font-size:20px}.w[data-s="3"] .wh{padding:11px 12px 2px}.w[data-s="3"] .wb{padding:2px 12px 11px}
+  .kan,.cal{grid-template-columns:1fr 1fr}
+  .bottomnav{display:flex;position:fixed;left:10px;right:10px;bottom:10px;background:#111827;border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,.25);justify-content:space-around;padding:8px 4px;z-index:30}
+  .bottomnav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:600;color:#8b93a8;text-decoration:none;padding:2px 6px}.bottomnav a.on{color:var(--amber)}.bottomnav svg{width:19px;height:19px}
+  #btnEdit{display:none}
+}
+</style></head><body>
+<div class="auth" id="auth"><form class="authcard" id="authForm"><span class="brand" style="color:var(--ink);margin:0"><i></i></span><h1>Sales Rep Dashboard</h1><p>New design preview. Please sign in to continue.</p><label for="pw">Password</label><input type="password" id="pw" autocomplete="current-password"><button type="submit">Sign In</button><p class="autherr" id="authErr"></p></form></div>
+<div class="wrap"><div class="app" id="app"></div></div>
+<div class="scrim" id="scrim"></div><aside class="panel" id="panel"></aside>
+<div class="tip" id="tip"></div>
+<script>
+const SUPA_URL = 'https://tfpgywqmwnjesesfcmcg.supabase.co';
+const SUPA_KEY = 'sb_publishable_j6MIouzm484dXuHqH76JNw_39ol8cBx';
+const TABLE = 'sales_order_lines';
+const AUTH_HASH = '9ba9453fa13f90ec6dd4258873b58ac0ac60a349a57f3bdf395c690b26133384';
+const AUTH_KEY = 'ddl_sales_rep_dashboard_auth';      // same sign-in as the other pages
+const REP_KEY = 'ddl_home_rep';                         // chosen rep follows you between pages
+const LAYOUT_KEY = 'ddl_new_dashboard_layout';          // each person's own layout, kept in their browser
+/* ---------------- Older orders kept after they leave the feed's window ----------------
+   The feed pulls a rolling window from Unleashed (90 days at the moment) and every
+   upload is kept in the database. The pages read the newest upload, so an order
+   disappears once it is older than the window. This adds those orders back from
+   the earlier uploads. Read-only: nothing in the database is changed.
+
+   An order is added back only when it dropped out because of its age:
+     - it is not in the newest upload (the newest upload always wins);
+     - every line was Completed when it was last seen;
+     - it is older than every order in all later uploads (it fell off the back of
+       the window, whatever length the window is);
+     - no newer order of the same customer dropped out at the same time (that
+       means the customer was changed in Unleashed, e.g. moved to another rep).
+   One upload per day is enough for this (the 23:xx UTC one); if the feed's
+   schedule changes, the hour of the newest upload is used instead. */
+async function fetchCarriedLines(latestRows, latestBatchId, cols, signal){
+  if(!latestRows.length || !latestBatchId) return [];
+  const t = v => v ? new Date(v).getTime() : NaN;
+  const done = r => !String(r.status || '').trim() || String(r.status).trim() === 'Completed';
+  const minDone = rows => { let m = Infinity; for(const r of rows){ const x = t(r.completed_date); if(done(r) && x < m) m = x; } return m; };
+  const hdr = {apikey: SUPA_KEY};
+  async function snapshots(hour){
+    const out = [], PAGE = 1000;
+    const like = encodeURIComponent(`*T${hour}:*-n8n`);
+    for(let from = 0; ; from += PAGE){
+      const r = await fetch(`${SUPA_URL}/rest/v1/${TABLE}?select=${cols}&batch_id=like.${like}&order=batch_id.asc,id.asc`,
+        {headers:{...hdr, Range:`${from}-${from+PAGE-1}`, 'Range-Unit':'items'}, signal});
+      if(!r.ok && r.status !== 206) throw new Error('status ' + r.status);
+      const page = await r.json(); out.push(...page);
+      if(page.length < PAGE || out.length >= 100000) break;
+    }
+    return out;
+  }
+  let rows = await snapshots('23');
+  const lastSnap = rows.length ? rows[rows.length-1].imported_at : null;
+  const latestAt = t(latestBatchId.slice(0, 24));
+  if(!lastSnap || latestAt - t(lastSnap) > 3*864e5){
+    const hh = latestBatchId.slice(11, 13);
+    if(hh !== '23') rows = rows.concat(await snapshots(hh)).sort((a, b) => a.batch_id < b.batch_id ? -1 : a.batch_id > b.batch_id ? 1 : (a.id||0) - (b.id||0));
+  }
+
+  // group into uploads, oldest first; the newest upload goes last
+  const ups = [];
+  for(const r of rows){
+    if(r.batch_id === latestBatchId) continue;
+    if(!ups.length || ups[ups.length-1].id !== r.batch_id) ups.push({id:r.batch_id, rows:[]});
+    ups[ups.length-1].rows.push(r);
+  }
+  ups.push({id:latestBatchId, rows:latestRows});
+  for(const u of ups){
+    u.orders = new Map();
+    for(const r of u.rows){ const k = String(r.order_no); if(!u.orders.has(k)) u.orders.set(k, []); u.orders.get(k).push(r); }
+    u.min = minDone(u.rows);
+  }
+  // oldest completed date in each upload and everything after it
+  const after = new Array(ups.length).fill(Infinity);
+  for(let i = ups.length - 2; i >= 0; i--) after[i] = Math.min(ups[i+1].min, after[i+1]);
+
+  const carried = new Map();
+  for(let i = 0; i < ups.length - 1; i++){
+    const cur = ups[i], next = ups[i+1];
+    if(!next.rows.length) { next.orders = cur.orders; next.rows = cur.rows; continue; }   // empty upload: nothing learnt
+    for(const k of next.orders.keys()) carried.delete(k);                            // back in the feed: the feed wins
+    const aged = [], movedCust = new Set();
+    for(const [k, ls] of cur.orders){
+      if(next.orders.has(k)) continue;
+      const old = ls.every(r => done(r) && t(r.completed_date) < after[i]);
+      if(old) aged.push([k, ls]); else movedCust.add(String(ls[0].customer_code || ls[0].customer || ''));
+    }
+    for(const [k, ls] of aged){
+      if(movedCust.has(String(ls[0].customer_code || ls[0].customer || ''))) continue;
+      carried.set(k, ls);
+    }
+  }
+  for(const k of ups[ups.length-1].orders.keys()) carried.delete(k);
+  return [].concat(...carried.values()).map(r => ({...r, carried:true}));
+}
+async function safeCarry(latestRows, latestBatchId, cols){
+  try { return await fetchCarriedLines(latestRows, latestBatchId, cols); }
+  catch(err){ console.error('Older orders not loaded', err); return []; }
+}
+/* Open orders have no completed date, and the feed has no order date yet. Until it
+   does, show when the order first came through in the hourly uploads ("Added"). */
+async function addFirstSeen(lines){
+  const open = [...new Set(lines.filter(l => l.status && String(l.status).trim() !== 'Completed' && !l.order_date).map(l => String(l.order_no)))];
+  if(!open.length) return;
+  const first = new Map();
+  await Promise.all(open.slice(0, 200).map(async o => {
+    try {
+      const r = await fetch(`${SUPA_URL}/rest/v1/${TABLE}?select=imported_at&order_no=eq.${encodeURIComponent(o)}&order=imported_at.asc&limit=1`, {headers:{apikey: SUPA_KEY}});
+      const d = r.ok ? await r.json() : [];
+      if(d.length) first.set(o, d[0].imported_at);
+    } catch(err){ /* leave it blank */ }
+  }));
+  for(const l of lines){ const f = first.get(String(l.order_no)); if(f && !l.order_date) l.first_seen = f; }
+}
+
+/* Customer names arrive exactly as typed in Unleashed ("Timber doors centre pty Ltd",
+   "A1 CUSTOM HOMES", "mandeep kalsi"). Show them in Title Case. Words already in mixed
+   case (MindMaze) and short codes (WHF, ACT, ATF, P/L, T/A) are left as they are.
+   Display only: nothing in the database changes. */
+const NAME_KEEP_UPPER = new Set(['ACT','NSW','VIC','QLD','SA','WA','NT','TAS','ATF','WHF','DDL','MSL','IT','AU','NZ','UK','USA','HVAC','CCTV']);
+const NAME_FIX = {LTD:'Ltd', MR:'Mr', MRS:'Mrs', MS:'Ms', DR:'Dr', ST:'St'};
+const NAME_SMALL = new Set(['and','of','the','for','at','in','on','by','to','or']);
+function niceName(s){
+  if(!s) return s;
+  let n = 0;
+  return String(s).replace(/[A-Za-z0-9][A-Za-z0-9'’]*/g, w => {
+    const first = n++ === 0;
+    const up = w.toUpperCase(), lo = w.toLowerCase();
+    if(/\d/.test(w) || w.length === 1) return w.length === 1 ? up : w;   // A1, single letters (T/A, P/L)
+    if(w !== up && w !== lo) return w;                                   // mixed case: MindMaze, McKenzie
+    if(NAME_FIX[up]) return NAME_FIX[up];
+    if(w === up && (NAME_KEEP_UPPER.has(up) || !/[AEIOUY]/.test(up))) return w;   // WHF, ACT, ATF
+    if(!first && NAME_SMALL.has(lo)) return lo;
+    return up[0] + lo.slice(1);
+  });
+}
+
+/* ---------------- Every assigned account (Mark's customer feed) ----------------
+   Orders only tell the dashboard about accounts that have bought something. Once the
+   Unleashed customer list comes through (table sales_customers), every account with a
+   BDM is listed too, at $0 when it has no orders. Until that table exists this does
+   nothing and the pages work exactly as before. Read-only. */
+let CUSTOMERS = [];
+const CUST_TABLE = 'sales_customers';
+async function fetchCustomers(){
+  try {
+    const h = {apikey: SUPA_KEY};
+    const PAGE = 1000;
+    async function readAll(filter){
+      const out = [];
+      for(let from = 0; ; from += PAGE){
+        const r = await fetch(`${SUPA_URL}/rest/v1/${CUST_TABLE}?select=*${filter}`, {headers:{...h, Range:`${from}-${from+PAGE-1}`, 'Range-Unit':'items'}});
+        if(!r.ok && r.status !== 206) return null;
+        const p = await r.json(); out.push(...p);
+        if(p.length < PAGE || out.length >= 200000) break;
+      }
+      return out;
+    }
+    let rows = null;
+    const lr = await fetch(`${SUPA_URL}/rest/v1/${CUST_TABLE}?select=batch_id&order=imported_at.desc&limit=1`, {headers:h});
+    if(lr.ok){
+      const latest = await lr.json();
+      if(!latest.length) return [];
+      rows = await readAll(`&batch_id=eq.${encodeURIComponent(latest[0].batch_id)}`);
+    } else if(lr.status === 400){
+      rows = await readAll('');            // no batch columns: the table holds just the current list
+    }
+    if(!rows) return [];                   // table not there yet
+    const v = x => (x == null ? '' : String(x)).trim();
+    const yes = x => x === true || /^(true|yes|y|1)$/i.test(v(x));
+    return rows.filter(c => !yes(c.obsolete)).map(c => ({
+      customer_code: v(c.customer_code),
+      customer: niceName(v(c.customer ?? c.customer_name)),
+      rep_name: v(c.rep_name ?? c.sales_person),
+      customer_type: v(c.customer_type) || 'Unspecified',
+      created: v(c.created_date ?? c.created_on) || null,
+    })).filter(c => c.customer);
+  } catch(err){ console.error('Customer list not loaded', err); return []; }
+}
+
+
+/* ======================= load ======================= */
+let LINES = [], IMPORTED_AT = null;
+async function fetchLatestBatch(){
+  const h = {apikey: SUPA_KEY};
+  const lr = await fetch(`${SUPA_URL}/rest/v1/${TABLE}?select=batch_id,imported_at&order=imported_at.desc&limit=1`, {headers:h});
+  if(!lr.ok) throw new Error('Could not reach the database (' + lr.status + ')');
+  const latest = await lr.json(); if(!latest.length) return {rows:[], importedAt:null, batchId:null};
+  const rows = [], PAGE = 1000;
+  for(let from = 0; ; from += PAGE){
+    const r = await fetch(`${SUPA_URL}/rest/v1/${TABLE}?select=*&batch_id=eq.${encodeURIComponent(latest[0].batch_id)}&order=id.asc`, {headers:{...h, Range:`${from}-${from+PAGE-1}`, 'Range-Unit':'items'}});
+    if(!r.ok && r.status !== 206) throw new Error('Could not load the data (' + r.status + ')');
+    const p = await r.json(); rows.push(...p); if(p.length < PAGE || rows.length >= 200000) break;
+  }
+  return {rows, importedAt: latest[0].imported_at, batchId: latest[0].batch_id};
+}
+async function load(){
+  render(); app.classList.add('skel');
+  try {
+    const {rows, importedAt, batchId} = await fetchLatestBatch();
+    const [carried, custs] = await Promise.all([safeCarry(rows, batchId, '*'), fetchCustomers()]);
+    CUSTOMERS = custs; LINES = rows.concat(carried); IMPORTED_AT = importedAt;
+    for(const l of LINES) l.customer = niceName(l.customer);
+    await addFirstSeen(LINES);
+    ST.loadErr = '';
+  } catch(err){ console.error(err); ST.loadErr = String(err.message || err); }
+  setupReps(); render(true);
+}
+
+/* ======================= helpers ======================= */
+const cv = v => v == null ? '' : String(v).trim();
+const OPEN_ST = ['Placed','Parked','Backordered'];
+const isDone = l => !cv(l.status) || cv(l.status) === 'Completed';
+const isOpenL = l => OPEN_ST.includes(cv(l.status));
+const NO_REP = 'No Rep Assigned';
+const repOf = l => cv(l.rep_name) || NO_REP;
+const dateOf = l => l.completed_date || l.order_date || l.first_seen || null;
+const isProduct = c => !!c && !c.includes('++') && c !== 'MSS-Delivery' && c !== '\\C';
+const money = v => '$' + (v||0).toLocaleString('en-AU', {minimumFractionDigits:2, maximumFractionDigits:2});
+const k$ = v => Math.abs(v) >= 1000 ? '$' + (v/1000).toFixed(1) + 'k' : '$' + Math.round(v);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const daysSince = d => Math.max(0, Math.floor((Date.now() - new Date(d).getTime()) / 864e5));
+const fdate = d => d ? new Date(d).toLocaleDateString('en-AU', {day:'2-digit', month:'2-digit', year:'numeric'}) : '—';
+const mkey = d => { const t = new Date(d); return t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0'); };
+const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const mlab = k => MN[+k.slice(5,7)-1];
+const ini = n => n === NO_REP ? '?' : n.split(' ').filter(Boolean).map(x => x[0]).slice(0,2).join('').toUpperCase();
+const health = d => d <= 30 ? ['Active','g','#17b26a'] : d <= 90 ? ['Cooling','a','#f59e0b'] : ['At Risk','r','#e5484d'];
+const KNOWN_BDMS = ['Brett Gordon','Cameron Levy','Husain Ali','Nathan Salman'];
+const FIXED_COL = {'Cameron Levy':'#f06a2f','Brett Gordon':'#3b82f6','Nathan Salman':'#8b5cf6','Husain Ali':'#17b26a'};
+const SPARE = ['#0ea5e9','#ec4899','#14b8a6','#a16207','#64748b'];
+let REPS = [], RC = {};
+function setupReps(){
+  const names = [...new Set([...KNOWN_BDMS, ...LINES.map(repOf).filter(n => n !== NO_REP)])].sort();
+  if(LINES.some(l => repOf(l) === NO_REP)) names.push(NO_REP);
+  REPS = names; RC = {}; let s = 0;
+  for(const n of names) RC[n] = n === NO_REP ? '#9aa1ad' : (FIXED_COL[n] || SPARE[s++ % SPARE.length]);
+  if(ST.rep && !REPS.includes(ST.rep)) ST.rep = '';
+}
+const ICON = {
+ dashboard:'<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>', accounts:'<path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1M9 17h6"/>',
+ orders:'<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0"/>', products:'<path d="M21 16V8l-9-5-9 5v8l9 5zM3.3 7 12 12l8.7-5M12 22V12"/>',
+ reports:'<path d="M3 3v18h18M7 16l4-5 4 3 5-7"/>', home:'<path d="m3 11 9-8 9 8v10h-6v-6H9v6H3z"/>', history:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"/>',
+ out:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>', search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+ clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', warn:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/>', check:'<path d="M20 6 9 17l-5-5"/>'};
+const ico = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg>`;
+
+/* ======================= state ======================= */
+const ST = {rep:'', range:'fy', q:'', edit:false, drawer:false, trend:'stacked', acctF:'All', loadErr:''};
+try { const r = localStorage.getItem(REP_KEY); if(r !== null) ST.rep = r === '__none__' ? 'No Rep Assigned' : r; } catch(e){}
+const WDEF = [['k_sales',3,2],['k_orders',3,2],['k_accts',3,2],['k_open',3,2],['trend',8,4],['leader',4,4],['accounts',8,5],['feed',4,5],['skus',4,4],['heat',8,4],['calendar',6,4,1],['opp',6,4,1],['pipeline',12,5,1]];
+const SIZES = [3,4,6,8,12];
+const defaultLayout = () => WDEF.map(([id,w,h,hid]) => ({id, w, h, hidden:!!hid}));
+let LAYOUT = defaultLayout();
+try { const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) || 'null');
+  if(Array.isArray(saved)){ const ok = saved.filter(x => x && WDEF.some(d => d[0] === x.id) && SIZES.includes(x.w));
+    for(const d of WDEF) if(!ok.some(x => x.id === d[0])) ok.push({id:d[0], w:d[1], h:d[2], hidden:true});
+    LAYOUT = ok.map(x => ({id:x.id, w:x.w, h:WDEF.find(d => d[0] === x.id)[2], hidden:!!x.hidden})); } } catch(e){}
+const saveLayout = () => { try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(LAYOUT)); } catch(e){} };
+const saveRep = () => { try { localStorage.setItem(REP_KEY, ST.rep === NO_REP ? '__none__' : ST.rep); } catch(e){} };
+
+/* ======================= model ======================= */
+const RANGES = [['fy','This Financial Year'],['all','All Time'],['month','This Month'],['last','Last Month'],['90','Last 90 Days']];
+function bounds(k){
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  if(k === 'fy') return [new Date(m >= 6 ? y : y-1, 6, 1), null];
+  if(k === 'month') return [new Date(y, m, 1), null];
+  if(k === 'last') return [new Date(y, m-1, 1), new Date(y, m, 1)];
+  if(k === '90') return [new Date(now - 90*864e5), null];
+  return [null, null];
+}
+function groupOrders(lines){
+  const m = new Map();
+  for(const l of lines){ const k = l.order_no; let o = m.get(k);
+    if(!o){ o = {no:k, cust:l.customer, code:l.customer_code, rep:repOf(l), date:dateOf(l), val:0, qty:0, st:isDone(l) ? 'Completed' : cv(l.status), skus:[]}; m.set(k, o); }
+    o.val += l.sub_total || 0; if(isProduct(l.product_code)){ o.qty += l.quantity || 0; o.skus.push(l.product_code); }
+    const d = dateOf(l); if(d && (!o.date || d > o.date)) o.date = d; }
+  return [...m.values()];
+}
+function model(opts = {}){
+  const q = ST.q.trim().toLowerCase();
+  const repOk = l => opts.allReps || !ST.rep || repOf(l) === ST.rep;
+  const qOk = l => !q || cv(l.customer).toLowerCase().includes(q) || cv(l.order_no).toLowerCase().includes(q) || cv(l.product_code).toLowerCase().includes(q);
+  const base = LINES.filter(l => repOk(l) && qOk(l));
+  const [a, b] = bounds(ST.range);
+  const inR = l => { const d = dateOf(l); if(!d) return !a && !b; const t = new Date(d); return (!a || t >= a) && (!b || t < b); };
+  const doneAll = base.filter(isDone), done = doneAll.filter(inR), open = base.filter(isOpenL);
+  const orders = groupOrders(done), openOrders = groupOrders(open);
+  // months shown on charts: from the range start (or first order) to the range end (or now), at most 12
+  const first = a || (doneAll.length ? new Date(doneAll.reduce((m,l) => dateOf(l) < m ? dateOf(l) : m, dateOf(doneAll[0]))) : new Date());
+  const last = b ? new Date(b - 1) : new Date();
+  const months = []; for(let d = new Date(first.getFullYear(), first.getMonth(), 1); d <= last; d.setMonth(d.getMonth()+1)) months.push(mkey(d));
+  const ms = months.slice(-12);
+  const reps = REPS.filter(r => opts.allReps || !ST.rep || r === ST.rep);
+  const monthly = ms.map(mm => Object.fromEntries(reps.map(r => [r, done.filter(l => repOf(l) === r && mkey(dateOf(l)) === mm).reduce((s,l) => s + (l.sub_total||0), 0)])));
+  // accounts: last order from all completed orders (so "days since" is true), revenue within the range
+  const acc = new Map();
+  for(const l of doneAll){ const k = l.customer; let x = acc.get(k); if(!x){ x = {cust:k, code:l.customer_code, rep:repOf(l), rev:0, orders:new Set(), last:null}; acc.set(k, x); }
+    const d = dateOf(l); if(d && (!x.last || d > x.last)) x.last = d; if(inR(l)){ x.rev += l.sub_total || 0; x.orders.add(l.order_no); } }
+  let accts = [...acc.values()].map(x => ({...x, orders:x.orders.size, d:x.last ? daysSince(x.last) : null}));
+  if(CUSTOMERS.length && !q){ const have = new Set(accts.map(x => cv(x.code).toLowerCase()));
+    for(const c of CUSTOMERS){ if(!REPS.includes(c.rep_name) || (ST.rep && !opts.allReps && c.rep_name !== ST.rep)) continue; if(have.has(c.customer_code.toLowerCase())) continue;
+      accts.push({cust:c.customer, code:c.customer_code, rep:c.rep_name, rev:0, orders:0, last:null, d:null, none:true}); } }
+  accts.sort((x,y) => y.rev - x.rev || (x.d ?? 9999) - (y.d ?? 9999));
+  const total = done.reduce((s,l) => s + (l.sub_total||0), 0);
+  // this month vs last month, whatever the date range
+  const now = new Date(), tm = mkey(now), lm = mkey(new Date(now.getFullYear(), now.getMonth()-1, 1));
+  const sumM = k => doneAll.filter(l => mkey(dateOf(l)) === k).reduce((s,l) => s + (l.sub_total||0), 0);
+  return {base, done, doneAll, open, orders, openOrders, ms, reps, monthly, accts, total, thisM:sumM(tm), lastM:sumM(lm)};
+}
+
+/* ======================= charts ======================= */
+function spark(vals, color, w = 120, h = 34){ if(vals.length < 2) vals = [0, ...vals]; const mx = Math.max(...vals, 1), st = w/(vals.length-1), pts = vals.map((v,i) => [i*st, h-4-(v/mx)*(h-10)]), p = pts.map(q => q.join(',')).join(' ');
+  return `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polygon points="0,${h} ${p} ${w},${h}" fill="${color}" opacity=".14"/><polyline class="draw" fill="none" stroke="${color}" stroke-width="2.2" stroke-linejoin="round" points="${p}" vector-effect="non-scaling-stroke"/></svg>`; }
+function trendChart(M){
+  const W = 640, H = 240, L = 46, B = 24, T = 18, R = 8, n = M.ms.length || 1;
+  if(!M.ms.length || !M.total) return '<div class="empty">No completed sales in this period.</div>';
+  let g = '';
+  if(ST.trend === 'stacked'){
+    const tot = M.monthly.map(m => Object.values(m).reduce((a,b) => a+b, 0)), mx = Math.max(...tot, 1)*1.15, bw = Math.min(70, (W-L-R)/n*.55);
+    const x = i => L + (i+.5)*(W-L-R)/n, y = v => T + (H-T-B)*(1-v/mx);
+    for(let i = 0; i <= 3; i++){ const v = mx*i/3; g += `<line class="gl" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L-6}" y="${y(v)+3}" text-anchor="end">${k$(v)}</text>`; }
+    M.monthly.forEach((m,i) => { let base = 0; M.reps.forEach(r => { const v = m[r]; if(v <= 0) return; g += `<rect class="grow" style="--d:${i}" x="${x(i)-bw/2}" y="${y(base+v)+1}" width="${bw}" height="${Math.max(y(base)-y(base+v)-2,1)}" rx="5" fill="${RC[r]}" data-tip="<b>${esc(r)}</b><br>${mlab(M.ms[i])} ${M.ms[i].slice(0,4)}: ${money(v)}"/>`; base += v; });
+      g += `<text class="lb" x="${x(i)}" y="${y(tot[i])-6}" text-anchor="middle">${tot[i] ? k$(tot[i]) : ''}</text><text class="ax" x="${x(i)}" y="${H-6}" text-anchor="middle">${mlab(M.ms[i])}</text>`; });
+  } else {
+    const mx = Math.max(...M.monthly.flatMap(m => Object.values(m)), 1)*1.12, x = i => n === 1 ? (L+W-R)/2 : L + i*(W-L-R)/(n-1), y = v => T + (H-T-B)*(1-v/mx);
+    for(let i = 0; i <= 3; i++){ const v = mx*i/3; g += `<line class="gl" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L-6}" y="${y(v)+3}" text-anchor="end">${k$(v)}</text>`; }
+    M.ms.forEach((m,i) => g += `<text class="ax" x="${x(i)}" y="${H-6}" text-anchor="middle">${mlab(m)}</text>`);
+    M.reps.forEach(r => { const pts = M.monthly.map((m,i) => [x(i), y(m[r])]); if(!M.monthly.some(m => m[r])) return;
+      g += `<polyline class="draw" fill="none" stroke="${RC[r]}" stroke-width="2.6" stroke-linejoin="round" points="${pts.map(p => p.join(',')).join(' ')}"/>`;
+      pts.forEach((p,i) => g += `<circle cx="${p[0]}" cy="${p[1]}" r="4.5" fill="${RC[r]}" stroke="#fff" stroke-width="2" data-tip="<b>${esc(r)}</b><br>${mlab(M.ms[i])}: ${money(M.monthly[i][r])}"/>`); });
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">${g}</svg>`;
+}
+const legend = M => `<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--ink2);margin-bottom:4px">${M.reps.filter(r => M.monthly.some(m => m[r])).map(r => `<span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${RC[r]};margin-right:5px"></span>${esc(r)}</span>`).join('')}</div>`;
+const avatar = (r, s = 26) => `<span class="av" style="background:${RC[r]};width:${s}px;height:${s}px;line-height:${s}px;font-size:${s < 26 ? 9.5 : 11}px">${ini(r)}</span>`;
+
+/* ======================= widgets ======================= */
+const RLABEL = () => (RANGES.find(r => r[0] === ST.range) || [,''])[1];
+const W = {
+ k_sales:{t:'Total Sales', sub:() => RLABEL(), hero:true, r(M){ const ch = M.lastM ? (M.thisM - M.lastM)/M.lastM*100 : null; const m = M.monthly.map(x => Object.values(x).reduce((a,b) => a+b, 0));
+   return `<div class="kpi"><div class="v" data-count="${M.total}" data-fmt="money">${money(M.total)}</div><div class="s">${ch === null ? 'Completed sales' : `<span class="${ch >= 0 ? 'up' : 'down'}">${ch >= 0 ? '▲' : '▼'} ${Math.abs(ch).toFixed(0)}%</span> this month so far vs last month`}</div>${spark(m, '#ffffff')}</div>`; }},
+ k_orders:{t:'Orders', sub:() => 'completed', r(M){ const m = M.ms.map(mm => M.orders.filter(o => mkey(o.date) === mm).length);
+   return `<div class="kpi"><div class="v" data-count="${M.orders.length}">${M.orders.length}</div><div class="s">avg ${M.orders.length ? money(M.total/M.orders.length) : '$0.00'} per order</div>${spark(m, '#2b3240')}</div>`; }},
+ k_accts:{t:'Accounts', sub:() => 'buying in period', r(M){ const buy = M.accts.filter(a => a.orders), act = M.accts.filter(a => a.d !== null && a.d <= 30).length, risk = M.accts.filter(a => a.d !== null && a.d > 90).length, all = M.accts.filter(a => a.d !== null).length;
+   return `<div class="kpi"><div class="v" data-count="${buy.length}">${buy.length}</div><div class="s"><span class="tag g">${act} active</span><span class="tag r">${risk} at risk</span>${M.accts.some(a => a.none) ? `<span class="tag n">${M.accts.filter(a => a.none).length} no orders</span>` : ''}</div><div class="bar" style="height:8px"><i style="width:${all ? act/all*100 : 0}%;background:#17b26a"></i></div></div>`; }},
+ k_open:{t:'Open Orders', sub:() => 'not yet completed', r(M){ const v = M.openOrders.reduce((s,o) => s + o.val, 0), old = M.openOrders.length ? Math.max(...M.openOrders.map(o => o.date ? daysSince(o.date) : 0)) : 0;
+   return `<div class="kpi"><div class="v" data-count="${M.openOrders.length}">${M.openOrders.length}</div><div class="s"><b>${money(v)}</b>${M.openOrders.length ? ` · oldest ${old} days` : ''}</div><div style="display:flex;gap:4px;flex-wrap:wrap">${M.openOrders.slice(0,4).map(o => `<span class="tag a" data-tip="${esc(o.no)} · ${esc(o.cust)}">${esc(o.st)}</span>`).join('') || '<span class="tag g">All clear</span>'}</div></div>`; }},
+ trend:{t:'Sales Trend', sub:() => 'by month', tools:() => `<span class="seg"><button class="${ST.trend === 'stacked' ? 'on' : ''}" data-act="trend" data-v="stacked">Stacked</button><button class="${ST.trend === 'lines' ? 'on' : ''}" data-act="trend" data-v="lines">Lines</button></span>`,
+   r(M){ return `${legend(M)}<div style="height:calc(100% - 22px)">${trendChart(M)}</div>`; }},
+ leader:{t:'Rep Leaderboard', sub:() => 'click to filter', r(){ const A = model({allReps:true}); const rows = REPS.filter(r => r !== NO_REP).map(r => ({r, v:A.done.filter(l => repOf(l) === r).reduce((s,l) => s + (l.sub_total||0), 0), o:A.openOrders.filter(o => o.rep === r).length})).sort((a,b) => b.v - a.v); const mx = Math.max(rows[0]?.v || 0, 1);
+   return rows.map((x,i) => `<div class="row click" data-act="rep" data-v="${esc(x.r)}" style="${ST.rep && ST.rep !== x.r ? 'opacity:.4' : ''}"><b style="color:var(--muted);width:14px">${i+1}</b>${avatar(x.r)}<div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:6px"><span class="nm" style="font-weight:600">${esc(x.r)}</span><b>${money(x.v)}</b></div><div class="bar"><i style="width:${x.v/mx*100}%;background:${RC[x.r]}"></i></div><div style="font-size:10.5px;color:var(--muted);margin-top:2px">${A.total ? Math.round(x.v/A.total*100) : 0}% of team sales${x.o ? ` · <span style="color:#a66300;font-weight:700">${x.o} open</span>` : ''}</div></div></div>`).join(''); }},
+ accounts:{t:'Account Health', sub:() => 'days since last order', r(M){ const g = {All:M.accts.filter(a => !a.none), Active:M.accts.filter(a => a.d !== null && a.d <= 30), Cooling:M.accts.filter(a => a.d > 30 && a.d <= 90), 'At Risk':M.accts.filter(a => a.d > 90)}; if(M.accts.some(a => a.none)) g['No Orders Yet'] = M.accts.filter(a => a.none);
+   const list = g[ST.acctF] || g.All;
+   return `<div class="minis">${Object.keys(g).map(k => `<button class="${ST.acctF === k ? 'on' : ''}" data-act="acctF" data-v="${k}">${k} ${g[k].length}</button>`).join('')}</div>${list.map(a => { const h = a.none ? ['No Orders Yet','n'] : health(a.d); return `<div class="row click" data-act="acct" data-v="${esc(a.cust)}">${avatar(a.rep, 24)}<span class="nm">${esc(a.cust)}</span><span class="tag ${h[1]}">${a.none ? h[0] : a.d + 'd · ' + h[0]}</span><b style="width:88px;text-align:right">${money(a.rev)}</b></div>`; }).join('') || '<div class="empty">No accounts match.</div>'}`; }},
+ feed:{t:'Needs Attention', sub:() => 'act on these first', r(M){ const it = [
+     ...M.openOrders.map(o => ({ic:'clock', c:'rgba(245,158,11,.18)', col:'#a66300', t:`${o.no} is ${o.st}`, s:`${o.cust} · ${money(o.val)}${o.date ? ' · ' + daysSince(o.date) + ' days' : ''}`, a:o.cust})),
+     ...M.accts.filter(a => a.d > 60).sort((a,b) => b.d - a.d).map(a => ({ic:'warn', c:'rgba(229,72,77,.13)', col:'#d92d32', t:a.cust, s:`No order for ${a.d} days · ${a.rep}`, a:a.cust})),
+     ...M.orders.filter(o => o.date && daysSince(o.date) <= 7).sort((a,b) => a.date < b.date ? 1 : -1).map(o => ({ic:'check', c:'rgba(23,178,106,.15)', col:'#0f8a5c', t:`New order ${o.no}`, s:`${o.cust} · ${money(o.val)}`, a:o.cust}))];
+   return it.map(x => `<div class="row click" data-act="acct" data-v="${esc(x.a)}" style="align-items:flex-start"><span class="ic" style="background:${x.c};color:${x.col}">${ico(x.ic)}</span><div style="min-width:0"><div style="font-weight:700;font-size:12.5px">${esc(x.t)}</div><div style="font-size:11px;color:var(--muted)">${esc(x.s)}</div></div></div>`).join('') || '<div class="empty">Nothing needs attention right now.</div>'; }},
+ skus:{t:'Top SKUs', sub:() => 'units sold', r(M){ const m = new Map(); for(const l of M.done){ if(!isProduct(l.product_code)) continue; const x = m.get(l.product_code) || {u:0, v:0}; x.u += l.quantity || 0; x.v += l.sub_total || 0; m.set(l.product_code, x); }
+   const p = [...m].sort((a,b) => b[1].u - a[1].u || b[1].v - a[1].v).slice(0, 10), mx = p.length ? p[0][1].u : 1;
+   return p.map(([k,x]) => `<div style="margin-bottom:9px" data-tip="<b>${esc(k)}</b><br>${x.u} units · ${money(x.v)}"><div style="display:flex;justify-content:space-between;font-size:12px;gap:8px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(k)}</span><b>${x.u}</b></div><div class="bar"><i style="width:${x.u/mx*100}%;background:linear-gradient(90deg,#2b3240,#f59e0b)"></i></div></div>`).join('') || '<div class="empty">No products sold in this period.</div>'; }},
+ heat:{t:'Rep × Month', sub:() => 'darker = more sales', r(){ const A = model({allReps:true}); const ms = A.ms.slice(-6), off = A.ms.length - ms.length, rows = REPS.filter(r => r !== NO_REP || A.done.some(l => repOf(l) === NO_REP));
+   const mx = Math.max(...rows.flatMap(r => ms.map((_,i) => A.monthly[i+off][r] || 0)), 1);
+   if(!ms.length) return '<div class="empty">No months in this period.</div>';
+   return `<div class="hm" style="grid-template-columns:minmax(96px,1.4fr) repeat(${ms.length},minmax(0,1fr))"><div class="lb"></div>${ms.map(m => `<div class="lb" style="justify-content:center;color:var(--muted);min-height:20px">${mlab(m)}</div>`).join('')}${rows.map(r => `<div class="lb" style="${ST.rep && ST.rep !== r ? 'opacity:.35' : ''}">${avatar(r, 22)}<span style="margin-left:6px">${esc(r.split(' ')[0])}</span></div>${ms.map((m,i) => { const v = A.monthly[i+off][r] || 0; return `<div data-tip="<b>${esc(r)}</b><br>${mlab(m)} ${m.slice(0,4)}: ${money(v)}" style="background:${v > 0 ? `color-mix(in srgb,#f59e0b ${18+82*v/mx}%,transparent)` : 'var(--track)'};color:${v > 0 ? '#3d2600' : 'var(--muted)'};${ST.rep && ST.rep !== r ? 'opacity:.3' : ''}">${v > 0 ? k$(v) : '–'}</div>`; }).join('')}`).join('')}</div>`; }},
+ calendar:{t:'Order Calendar', sub:() => 'last 3 months', r(M){ const by = {}; [...groupOrders(M.doneAll), ...M.openOrders].forEach(o => { if(!o.date) return; const k = new Date(o.date).toDateString(); (by[k] ||= []).push(o); });
+   const mx = Math.max(...Object.values(by).map(l => l.reduce((s,o) => s + o.val, 0)), 1), now = new Date();
+   return `<div class="cal">${[2,1,0].map(back => { const Y = now.getFullYear(), Mo = now.getMonth() - back, f = new Date(Y, Mo, 1), nd = new Date(f.getFullYear(), f.getMonth()+1, 0).getDate(), off = (f.getDay()+6)%7; let c = '<span style="background:none"></span>'.repeat(off);
+     for(let i = 1; i <= nd; i++){ const dd = new Date(f.getFullYear(), f.getMonth(), i), l = by[dd.toDateString()]; if(l){ const v = l.reduce((s,o) => s + o.val, 0), op = l.some(o => o.st !== 'Completed'); c += `<span class="x" style="background:${op ? '#f59e0b' : `color-mix(in srgb,#2b3240 ${35+65*v/mx}%,transparent)`}" data-tip="<b>${fdate(dd)}</b> · ${l.length} order${l.length > 1 ? 's' : ''}<br>${money(v)}${op ? '<br>includes an open order' : ''}">${i}</span>`; } else c += `<span>${i}</span>`; }
+     return `<div><h6>${MN[f.getMonth()]} ${f.getFullYear()}</h6><div class="cg">${c}</div></div>`; }).join('')}</div>`; }},
+ opp:{t:'Opportunity Map', sub:() => 'spend vs days since last order', r(M){ const ac = M.accts.filter(a => a.d !== null); if(!ac.length) return '<div class="empty">No accounts yet.</div>';
+   const Wd = 560, H = 250, L = 46, B = 28, T = 12, R = 10, mY = Math.max(...ac.map(a => a.rev), 1)*1.2, x = v => L + (Wd-L-R)*Math.min(v, 120)/120, y = v => T + (H-T-B)*(1 - v/mY);
+   let g = `<rect x="${x(60)}" y="${T}" width="${x(120)-x(60)}" height="${Math.max(y(Math.min(1000, mY))-T, 0)}" fill="#e5484d" opacity=".07" rx="8"/><text x="${x(120)-6}" y="${T+14}" text-anchor="end" font-size="10.5" font-weight="700" fill="#e5484d">Big And Going Quiet</text>`;
+   [0,30,60,90,120].forEach(v => g += `<line class="gl" x1="${x(v)}" x2="${x(v)}" y1="${T}" y2="${H-B}"/><text class="ax" x="${x(v)}" y="${H-B+14}" text-anchor="middle">${v === 120 ? '120d+' : v + 'd'}</text>`);
+   ac.forEach(a => g += `<circle cx="${x(a.d)}" cy="${y(a.rev)}" r="${Math.min(6 + a.orders*3, 18)}" fill="${RC[a.rep] || '#9aa1ad'}" fill-opacity=".8" stroke="#fff" stroke-width="2" style="cursor:pointer" data-act="acct" data-v="${esc(a.cust)}" data-tip="<b>${esc(a.cust)}</b><br>${money(a.rev)} · last order ${a.d} days ago"/>`);
+   return `<svg viewBox="0 0 ${Wd} ${H}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">${g}</svg>`; }},
+ pipeline:{t:'Order Pipeline', sub:() => 'open orders and this month\'s wins', r(M){ const tm = mkey(new Date());
+   const col = (t, l, cl, e) => `<div class="kcol"><h5>${t}<span class="tag ${cl}">${l.length}</span></h5>${l.length ? l.map(o => `<div class="kc" style="border-left-color:${RC[o.rep] || '#9aa1ad'}" data-act="acct" data-v="${esc(o.cust)}"><b>${esc(o.no)}</b><div>${esc(o.cust)}</div><div class="m"><span>${esc(o.rep)}</span><b style="color:var(--ink)">${money(o.val)}</b></div>${o.st !== 'Completed' && o.date ? `<div class="m"><span>Added ${fdate(o.date)}</span><span class="tag ${daysSince(o.date) > 7 ? 'r' : 'a'}">${daysSince(o.date)} days</span></div>` : ''}</div>`).join('') : `<div class="empty">${e}</div>`}</div>`;
+   return `<div class="kan">${col('Placed', M.openOrders.filter(o => o.st === 'Placed'), 'k', 'None right now')}${col('Parked', M.openOrders.filter(o => o.st === 'Parked'), 'a', 'None right now')}${col('Backordered', M.openOrders.filter(o => o.st === 'Backordered'), 'a', 'None right now')}${col('Completed · ' + MN[new Date().getMonth()], groupOrders(M.doneAll).filter(o => o.date && mkey(o.date) === tm), 'g', 'None yet')}</div>`; }},
+};
+
+/* ======================= render ======================= */
+const app = document.getElementById('app');
+function ageText(){ if(!IMPORTED_AT) return 'Loading…'; const m = Math.round((Date.now() - new Date(IMPORTED_AT))/6e4); return m < 60 ? `Live · ${m} min${m === 1 ? '' : 's'} ago` : m < 2880 ? `Live · ${Math.round(m/60)} hour${Math.round(m/60) === 1 ? '' : 's'} ago` : `Data ${Math.round(m/1440)} days old`; }
+function render(anim){
+  const M = LINES.length ? model() : null, items = LAYOUT.filter(x => !x.hidden);
+  const nav = [['dashboard','Dashboard','new-dashboard.html'],['accounts','Accounts','index.html#accounts'],['orders','Orders','index.html#orders'],['products','Products / SKUs','index.html#products'],['reports','Reports','index.html#reports']];
+  app.className = `app ${ST.edit ? 'editing' : ''} ${anim ? 'anim' : ''}`;
+  const stale = IMPORTED_AT && (Date.now() - new Date(IMPORTED_AT)) > 14*864e5;
+  app.innerHTML = `<nav class="nav"><div class="brand"><i></i><span>Sales Rep<br>Dashboard</span></div>${nav.map(([k,l,h]) => `<a class="${k === 'dashboard' ? 'on' : ''}" href="${h}" title="${k === 'dashboard' ? '' : 'Opens the current layout for now'}">${ico(k)}<span>${l}</span></a>`).join('')}
+    <small>MORE VIEWS</small><a href="home.html">${ico('home')}<span>Rep Home</span></a><a href="history.html">${ico('history')}<span>History</span></a><span class="sp"></span><a data-act="signout">${ico('out')}<span>Sign Out</span></a></nav>
+  <main class="body">
+    <div class="head"><div><h2>Sales Dashboard<span class="prevtag">New Design Preview</span></h2><p>Your accounts, orders and SKUs at a glance</p></div><span class="sp"></span>
+      <label class="search">${ico('search')}<input id="q" type="search" placeholder="Search customer, order no. or SKU" value="${esc(ST.q)}" autocomplete="off"></label>
+      <span class="live ${stale || ST.loadErr ? 'stale' : ''}" title="${esc(ST.loadErr || (IMPORTED_AT ? 'Last upload ' + new Date(IMPORTED_AT).toLocaleString('en-AU') : ''))}"><b></b>${ST.loadErr ? 'Could Not Load Data' : ageText()}</span>
+      <button class="btn ${ST.edit ? 'amber' : 'dark'}" id="btnEdit" data-act="edit">${ST.edit ? '✓ Done' : '✎ Customise'}</button></div>
+    <div class="filters"><div class="reps"><span class="rchip all ${!ST.rep ? 'on' : ''}" data-act="rep" data-v="">All Reps</span>${REPS.map(r => `<span class="rchip ${ST.rep === r ? 'on' : ''}" data-act="rep" data-v="${esc(r)}">${avatar(r)}${esc(r)}</span>`).join('')}</div>
+      <select class="dsel" id="range" aria-label="Date range">${RANGES.map(([k,l]) => `<option value="${k}" ${ST.range === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+    <div class="editbar"><b>Customising your layout: drag ⠿ to move a panel, ✕ to hide it. It's saved in this browser.</b><button class="btn" data-act="drawer">＋ Panels</button><button class="btn" data-act="reset">Reset</button><button class="btn amber" data-act="edit">Done</button></div>
+    <div class="grid" id="grid">${M ? items.map((it,i) => { const w = W[it.id]; return `<div class="w ${w.hero ? 'hero' : ''}" data-id="${it.id}" data-s="${it.w}" style="--w:${it.w};--h:${it.h};--i:${i}">
+      <div class="wh">${ST.edit ? '<span class="handle" title="Drag to move">⠿</span>' : ''}<h4>${w.t}</h4>${w.tools ? w.tools() : `<small>${esc(w.sub())}</small>`}${ST.edit ? `<button class="wx" data-act="hide" data-v="${it.id}" title="Hide">✕</button>` : ''}</div><div class="wb">${w.r(M)}</div></div>`; }).join('')
+      : items.map((it,i) => `<div class="w" data-s="${it.w}" style="--w:${it.w};--h:${it.h};--i:${i}"><div class="wb">${ST.loadErr ? '<div class="empty">Could not load the data. Please refresh.</div>' : ''}</div></div>`).join('')}</div>
+    <div class="bottomnav">${nav.map(([k,l,h]) => `<a class="${k === 'dashboard' ? 'on' : ''}" href="${h}">${ico(k)}${l.split(' ')[0]}</a>`).join('')}</div>
+  </main>`;
+  if(anim){ countUp(); clearTimeout(render._t); render._t = setTimeout(() => app.classList.remove('anim'), 1600); } else countUp();
+  wire();
+}
+function countUp(){ app.querySelectorAll('[data-count]').forEach(el => { const to = +el.dataset.count, isM = el.dataset.fmt === 'money', t0 = performance.now(), dur = 800;
+  const step = t => { const p = Math.min((t - t0)/dur, 1), e = 1 - Math.pow(1-p, 3), v = to*e; el.textContent = isM ? money(v) : Math.round(v); if(p < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }); }
+
+/* ---------- account panel ---------- */
+function openAccount(name){
+  const ls = LINES.filter(l => l.customer === name); if(!ls.length) return;
+  const done = groupOrders(ls.filter(isDone)).sort((a,b) => a.date < b.date ? 1 : -1), open = groupOrders(ls.filter(isOpenL));
+  const rev = done.reduce((s,o) => s + o.val, 0), last = done[0]?.date, d = last ? daysSince(last) : null, h = d === null ? ['No Orders Yet','n'] : health(d), rep = repOf(ls[0]);
+  const sku = new Map(); ls.filter(l => isDone(l) && isProduct(l.product_code)).forEach(l => sku.set(l.product_code, (sku.get(l.product_code)||0) + (l.quantity||0)));
+  const tier = cv(ls.find(l => cv(l.sell_price_tier))?.sell_price_tier), pay = cv(ls.find(l => cv(l.payment_mode))?.payment_mode);
+  document.getElementById('panel').innerHTML = `<div style="display:flex;gap:10px;align-items:flex-start"><div style="flex:1;min-width:0"><h3>${esc(name)}</h3><div style="font-size:12px;color:var(--muted);margin-top:3px">${avatar(rep, 18)} ${esc(rep)}${ls[0].customer_code ? ' · ' + esc(ls[0].customer_code) : ''}</div></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
+   <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><span class="tag ${h[1]}">${d === null ? h[0] : h[0] + ' · ' + d + ' days since last order'}</span>${tier ? `<span class="tag k">${esc(tier)}</span>` : ''}${pay ? `<span class="tag k">${esc(pay)}</span>` : ''}</div>
+   <div class="minik"><div><small>Total Purchase</small><b>${money(rev)}</b></div><div><small>Orders</small><b>${done.length}</b></div><div><small>Avg Order</small><b>${done.length ? money(rev/done.length) : '—'}</b></div></div>
+   <h4 style="margin:6px 0 4px;font-size:13px">Orders</h4><table class="t"><thead><tr><th>Date</th><th>Order No.</th><th>Status</th><th class="rt">Total</th></tr></thead><tbody>${[...open, ...done].map(o => `<tr><td>${fdate(o.date)}</td><td>${esc(o.no)}</td><td><span class="tag ${o.st === 'Completed' ? 'g' : 'a'}">${esc(o.st)}</span></td><td class="rt">${money(o.val)}</td></tr>`).join('')}</tbody></table>
+   ${sku.size ? `<h4 style="margin:16px 0 6px;font-size:13px">Top SKUs</h4>${[...sku].sort((a,b) => b[1]-a[1]).slice(0,6).map(([k,u]) => `<div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid var(--grid)"><span>${esc(k)}</span><b>${u} sold</b></div>`).join('')}` : ''}
+   <p style="margin-top:16px"><a class="btn dark" style="text-decoration:none;display:inline-block" href="index.html#orders">Open In Orders ↗</a></p>`;
+  showPanel(true);
+}
+function openDrawer(){
+  document.getElementById('panel').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><h3>Panels</h3><button class="x" data-act="close">✕</button></div><p style="color:var(--ink2);font-size:12.5px;margin:4px 0 14px">Turn panels on or off and pick a width. Saved in this browser.</p>
+   ${LAYOUT.map(x => `<div class="wl"><span>${W[x.id].t}</span><span class="sizes">${SIZES.map(s => `<button class="${x.w === s ? 'on' : ''}" data-act="size" data-v="${x.id}:${s}" title="Width ${s} of 12">${s}</button>`).join('')}</span><button class="tg ${x.hidden ? '' : 'on'}" data-act="toggle" data-v="${x.id}" aria-label="Show ${W[x.id].t}"></button></div>`).join('')}
+   <div style="display:flex;gap:8px;margin-top:12px"><button class="btn" style="flex:1" data-act="reset">Reset Layout</button><button class="btn amber" style="flex:1" data-act="close">Done</button></div>`;
+  showPanel(true);
+}
+function showPanel(on){ document.getElementById('panel').classList.toggle('open', on); document.getElementById('scrim').classList.toggle('open', on); ST.drawer = on && ST.edit; }
+
+/* ---------- drag to reorder (Customise) ---------- */
+let dragId = null;
+function wire(){
+  const q = document.getElementById('q'); if(q) q.oninput = e => { ST.q = e.target.value; clearTimeout(wire._t); wire._t = setTimeout(() => { const pos = q.selectionStart; render(); const n = document.getElementById('q'); n.focus(); n.setSelectionRange(pos, pos); }, 180); };
+  const rg = document.getElementById('range'); if(rg) rg.onchange = e => { ST.range = e.target.value; render(true); };
+  if(!ST.edit) return;
+  document.querySelectorAll('#grid .w').forEach(w => {
+    const hd = w.querySelector('.handle'); if(hd){ hd.addEventListener('pointerdown', () => { w.draggable = true; }); hd.addEventListener('pointerup', () => { w.draggable = false; }); }
+    w.addEventListener('dragstart', e => { dragId = w.dataset.id; w.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', dragId); } catch(_){} });
+    w.addEventListener('dragend', () => { w.draggable = false; w.classList.remove('dragging'); document.querySelectorAll('.drop-before,.drop-after').forEach(x => x.classList.remove('drop-before','drop-after')); });
+    w.addEventListener('dragover', e => { if(!dragId || w.dataset.id === dragId) return; e.preventDefault(); const r = w.getBoundingClientRect(), after = e.clientX > r.left + r.width/2; w.classList.toggle('drop-after', after); w.classList.toggle('drop-before', !after); });
+    w.addEventListener('dragleave', () => w.classList.remove('drop-before','drop-after'));
+    w.addEventListener('drop', e => { e.preventDefault(); if(!dragId || w.dataset.id === dragId) return; const after = w.classList.contains('drop-after'); const from = LAYOUT.findIndex(x => x.id === dragId), it = LAYOUT.splice(from, 1)[0]; let to = LAYOUT.findIndex(x => x.id === w.dataset.id); if(after) to++; LAYOUT.splice(to, 0, it); dragId = null; saveLayout(); render(); });
+  });
+}
+document.addEventListener('click', e => {
+  if(e.target.id === 'scrim'){ showPanel(false); return; }
+  const a = e.target.closest('[data-act]'); if(!a) return; const k = a.dataset.act, v = a.dataset.v;
+  if(k === 'rep'){ ST.rep = ST.rep === v ? '' : v; saveRep(); render(); }
+  else if(k === 'trend'){ ST.trend = v; render(true); }
+  else if(k === 'acctF'){ ST.acctF = v; render(); }
+  else if(k === 'acct'){ openAccount(v); }
+  else if(k === 'close'){ showPanel(false); }
+  else if(k === 'edit'){ ST.edit = !ST.edit; showPanel(false); render(); }
+  else if(k === 'drawer'){ openDrawer(); }
+  else if(k === 'hide'){ LAYOUT.find(x => x.id === v).hidden = true; saveLayout(); render(); }
+  else if(k === 'toggle'){ const it = LAYOUT.find(x => x.id === v); it.hidden = !it.hidden; saveLayout(); render(); openDrawer(); }
+  else if(k === 'size'){ const [id, s] = v.split(':'); LAYOUT.find(x => x.id === id).w = +s; saveLayout(); render(); openDrawer(); }
+  else if(k === 'reset'){ LAYOUT = defaultLayout(); saveLayout(); render(true); if(document.getElementById('panel').classList.contains('open')) openDrawer(); }
+  else if(k === 'signout'){ try { localStorage.removeItem(AUTH_KEY); } catch(_){} location.reload(); }
+});
+document.addEventListener('keydown', e => { if(e.key === 'Escape') showPanel(false); });
+const tip = document.getElementById('tip');
+document.addEventListener('mousemove', e => { const t = e.target.closest('[data-tip]'); if(!t){ tip.style.display = 'none'; return; } tip.innerHTML = t.dataset.tip; tip.style.display = 'block'; tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8) + 'px'; tip.style.top = Math.min(e.clientY + 14, innerHeight - tip.offsetHeight - 8) + 'px'; });
+setInterval(() => { const el = document.querySelector('.live'); if(el && IMPORTED_AT && !ST.loadErr) el.lastChild.textContent = ageText(); }, 60000);
+
+/* ======================= sign in (same password as the other pages) ======================= */
+async function sha256Hex(t){ const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,'0')).join(''); }
+(function(){
+  let ok = false; try { ok = localStorage.getItem(AUTH_KEY) === AUTH_HASH; } catch(_){}
+  const gate = document.getElementById('auth');
+  if(ok){ gate.hidden = true; load(); return; }
+  document.getElementById('pw').focus();
+  document.getElementById('authForm').addEventListener('submit', async e => { e.preventDefault(); const v = document.getElementById('pw').value, err = document.getElementById('authErr');
+    if(!v){ err.textContent = 'Enter the password.'; return; }
+    if(await sha256Hex(v) === AUTH_HASH){ try { localStorage.setItem(AUTH_KEY, AUTH_HASH); } catch(_){} gate.hidden = true; load(); }
+    else { err.textContent = 'Incorrect password.'; document.getElementById('pw').value = ''; } });
+})();
+</script></body></html>
