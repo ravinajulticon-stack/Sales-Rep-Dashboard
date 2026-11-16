@@ -348,7 +348,7 @@ const SPARE = ['#0ea5e9','#ec4899','#14b8a6','#a16207','#64748b'];
 let REPS = [], RC = {};
 function setupReps(){
   const names = [...new Set([...KNOWN_BDMS, ...LINES.map(repOf).filter(n => n !== NO_REP)])].sort();
-  if(LINES.some(l => repOf(l) === NO_REP)) names.push(NO_REP);
+  if(LINES.some(l => repOf(l) === NO_REP) || CUSTOMERS.some(c => !c.rep_name && /^[25] /.test(c.customer_type))) names.push(NO_REP);
   REPS = names; RC = {}; let s = 0;
   for(const n of names) RC[n] = n === NO_REP ? '#9aa1ad' : (FIXED_COL[n] || SPARE[s++ % SPARE.length]);
   if(ST.rep && !REPS.includes(ST.rep)) ST.rep = '';
@@ -421,8 +421,8 @@ function model(opts = {}){
     const d = dateOf(l); if(d && (!x.last || d > x.last)) x.last = d; if(inR(l)){ x.rev += l.sub_total || 0; x.orders.add(l.order_no); } }
   let accts = [...acc.values()].map(x => ({...x, orders:x.orders.size, d:x.last ? daysSince(x.last) : null}));
   if(CUSTOMERS.length && !q && !lineOnly()){ const have = new Set(accts.map(x => cv(x.code).toLowerCase()));
-    for(const c of CUSTOMERS){ if(!REPS.includes(c.rep_name) || (ST.rep && !opts.allReps && c.rep_name !== ST.rep)) continue; if(have.has(c.customer_code.toLowerCase())) continue;
-      accts.push({cust:c.customer, code:c.customer_code, rep:c.rep_name, rev:0, orders:0, last:null, d:null, none:true}); } }
+    for(const c of CUSTOMERS){ const rn = c.rep_name || (/^[25] /.test(c.customer_type) ? NO_REP : ''); if(!REPS.includes(rn) || (ST.rep && !opts.allReps && rn !== ST.rep)) continue; if(have.has(c.customer_code.toLowerCase())) continue;
+      accts.push({cust:c.customer, code:c.customer_code, rep:rn, rev:0, orders:0, last:null, d:null, none:true}); } }
   if(ST.act === 'ordered') accts = accts.filter(x => !x.none); else if(ST.act === 'none') accts = accts.filter(x => x.none || !x.orders);
   accts.sort((x,y) => y.rev - x.rev || (x.d ?? 9999) - (y.d ?? 9999));
   const total = done.reduce((s,l) => s + (l.sub_total||0), 0);
