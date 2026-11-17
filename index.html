@@ -71,6 +71,11 @@ table.lines{background:#fff;border:1px solid var(--grid);border-radius:10px;max-
 .row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--grid);font-size:12.5px}.row:last-child{border-bottom:none}.row .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.row b{white-space:nowrap}.row.click{cursor:pointer;border-radius:8px}.row.click:hover{background:#f0f4fd}
 .bar{height:6px;border-radius:4px;background:var(--track);overflow:hidden;margin-top:4px}.bar i{display:block;height:100%;border-radius:4px}
 .tag{font-size:10.5px;font-weight:700;border-radius:100px;padding:2px 8px;white-space:nowrap}.g{color:#0f8a5c;background:rgba(23,178,106,.14)}.a{color:#a66300;background:rgba(245,158,11,.18)}.r{color:#d92d32;background:rgba(229,72,77,.13)}.k{color:#011389;background:#e7eefc}.n{color:#5b6577;background:#eef0f3}
+.oseg{display:inline-flex;background:var(--track);border-radius:100px;padding:2px;gap:1px}.oseg button{border:none;background:none;color:var(--ink2);font-weight:700;font-size:10.5px;padding:3px 9px;border-radius:100px;cursor:pointer}.oseg button:hover{background:#fff}.oseg button.on{background:#e7eefc;color:#011389}.oseg button.on.g{background:rgba(23,178,106,.18);color:#0f8a5c}
+.btn.sm{padding:5px 10px;font-size:11.5px;border-radius:9px}.ochg{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:8px}.ochg .btn{margin-left:auto}
+.omodal{position:fixed;inset:0;background:rgba(1,15,96,.35);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:60;padding:16px}.obox{background:#fff;border-radius:20px;padding:22px;width:380px;max-width:100%;box-shadow:0 30px 80px rgba(1,15,96,.35)}.obox h3{margin:0 0 6px;font-size:17px}.obox p{margin:0 0 14px;color:var(--ink2);font-size:12.5px;line-height:1.5}.obox label{display:block;font-size:12px;font-weight:600;color:var(--ink2)}.obox input{width:100%;border:1.5px solid #e6e4ec;border-radius:10px;padding:9px 11px;margin:5px 0 12px;font:inherit;font-size:13px;outline:none}.obox input:focus{border-color:var(--hi)}.oerr{color:#d92d32;font-size:12px;min-height:16px}.obtns{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
+.otoast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;background:#14123a;color:#fff;font-size:12.5px;font-weight:600;padding:10px 16px;border-radius:12px;box-shadow:0 12px 30px rgba(1,15,96,.3);z-index:70;transition:all .25s;pointer-events:none;max-width:calc(100% - 32px)}.otoast.show{opacity:1;transform:translate(-50%,0)}.otoast.bad{background:#b42318}
+@media (max-width:820px){.otoast{bottom:96px}}
 .seg{display:inline-flex;background:var(--track);border-radius:9px;padding:2px}.seg button{border:none;background:none;color:var(--ink2);font-weight:600;font-size:11px;padding:3px 9px;border-radius:7px;cursor:pointer}.seg button.on{background:#e7eefc;color:#011389}
 .ic{width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}.ic svg{width:15px;height:15px}
 .minis{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.minis button{border:1.5px solid #e6e4ec;background:#fff;color:var(--ink2);border-radius:100px;padding:3px 10px;font-weight:600;font-size:11.5px;cursor:pointer}.minis button.on{border-color:var(--hi);color:#011389;background:#e7eefc}
@@ -314,7 +319,7 @@ async function load(){
   render(); app.classList.add('skel');
   try {
     const {rows, importedAt, batchId} = await fetchLatestBatch();
-    const [carried, custs] = await Promise.all([safeCarry(rows, batchId, '*'), fetchCustomers()]);
+    const [carried, custs] = await Promise.all([safeCarry(rows, batchId, '*'), fetchCustomers(), fetchOrigins()]);
     CUSTOMERS = custs; _CREATED = null; LINES = rows.concat(carried); IMPORTED_AT = importedAt;
     for(const l of LINES) l.customer = niceName(l.customer);
     await addFirstSeen(LINES);
@@ -582,7 +587,7 @@ Object.assign(W, {
   origin_split:{t:'New vs Existing Accounts', sub:() => 'sales by account origin', r(){ const A = model({allReps:true});
     const rows = REPS.filter(r => r !== NO_REP).map(r => { const ls = A.done.filter(l => repOf(l) === r), n = ls.filter(l => originOf(l.customer_code, l.customer) === 'New').reduce((s,l) => s + (l.sub_total||0), 0), t = ls.reduce((s,l) => s + (l.sub_total||0), 0); return {r, n, e:t - n, t}; }).sort((a,b) => b.t - a.t);
     const mx = Math.max(...rows.map(x => x.t), 1);
-    return `<div style="display:flex;gap:14px;font-size:11px;color:var(--ink2);margin-bottom:6px"><span><span class="dot" style="background:#17b26a"></span>New (Opened By Rep)</span><span><span class="dot" style="background:#b8c6e8"></span>Existing (Handed Over)</span></div>` + rows.map(x => `<div class="click" data-act="rep" data-v="${esc(x.r)}" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12.5px;gap:8px"><span>${repCell(x.r)}</span><span><b>${money(x.n)}</b> <span class="mut">new of ${money(x.t)}</span></span></div><div class="bar" style="display:flex;height:9px"><i style="width:${x.n/mx*100}%;background:#17b26a;border-radius:4px 0 0 4px"></i><i style="width:${x.e/mx*100}%;background:#b8c6e8;border-radius:0 4px 4px 0"></i></div></div>`).join('') + (ACCOUNT_ORIGIN.new.length || CUSTOMERS.some(c => c.created) ? '' : '<div class="mut" style="font-size:11.5px;margin-top:4px">Every account counts as Existing until Sam\'s list is loaded.</div>'); }},
+    return `<div style="display:flex;gap:14px;font-size:11px;color:var(--ink2);margin-bottom:6px"><span><span class="dot" style="background:#17b26a"></span>New (Opened By Rep)</span><span><span class="dot" style="background:#b8c6e8"></span>Existing (Handed Over)</span></div>` + rows.map(x => `<div class="click" data-act="rep" data-v="${esc(x.r)}" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12.5px;gap:8px"><span>${repCell(x.r)}</span><span><b>${money(x.n)}</b> <span class="mut">new of ${money(x.t)}</span></span></div><div class="bar" style="display:flex;height:9px"><i style="width:${x.n/mx*100}%;background:#17b26a;border-radius:4px 0 0 4px"></i><i style="width:${x.e/mx*100}%;background:#b8c6e8;border-radius:0 4px 4px 0"></i></div></div>`).join('') + (ACCOUNT_ORIGIN.new.length || CUSTOMERS.some(c => c.created) || [...ORIGIN_DB.values()].some(x => x.origin === 'New') ? '' : '<div class="mut" style="font-size:11.5px;margin-top:4px">Every account counts as Existing until the New ones are marked (Accounts → Edit Origin).</div>'); }},
   k_lines:{t:'Line Items', sub:() => 'order lines', r(M){ return `<div class="kpi"><div class="v" data-count="${M.done.length}">${M.done.length}</div><div class="s">across ${M.orders.length} orders</div><div></div></div>`; }},
   k_aov:{t:'Avg Order Value', sub:() => 'per completed order', r(M){ const v = M.orders.length ? M.total / M.orders.length : 0; return `<div class="kpi"><div class="v" data-count="${v}" data-fmt="money">${money(v)}</div><div class="s">${M.orders.length} orders · ${new Set(M.orders.map(o => o.cust)).size} customers</div><div></div></div>`; }},
   k_skus:{t:'Products Sold', sub:() => 'different SKUs', r(M){ const p = new Map(); M.done.forEach(l => { if(cv(l.product_code) && (!ST.prod || isProduct(l.product_code))) p.set(l.product_code, (p.get(l.product_code) || 0) + (l.quantity || 0)); }); const u = [...p.values()].reduce((a,b) => a + b, 0);
@@ -617,14 +622,14 @@ function pageHTML(M){
       + tableCard('accounts', 'All Accounts', [
         {k:'rep', label:'Sales Rep', sort:r => r.rep, cell:r => repCell(r.rep)},
         {k:'cust', label:'Customer', sort:r => r.cust.toLowerCase(), cls:'wr', cell:r => `<b style="font-weight:600">${esc(r.cust)}</b>`},
-        {k:'origin', label:'Origin', sort:r => originOf(r.code, r.cust), cell:r => originTag(originOf(r.code, r.cust))},
+        {k:'origin', label:'Origin', sort:r => originOf(r.code, r.cust), cell:r => originCell(r.code || '', r.cust)},
         {k:'tier', label:'Sell Price Tier', sort:r => r.tier || null, cell:r => r.tier ? esc(r.tier) : '<span class="mut">—</span>'},
         {k:'pay', label:'Payment Mode', sort:r => r.pay || null, cell:r => r.pay ? esc(r.pay) : '<span class="mut">—</span>'},
         {k:'orders', label:'Orders', num:1, sort:r => r.orders, cell:r => `${r.orders}${r.open ? ` <span class="tag a">+${r.open} open</span>` : ''}`},
         {k:'rev', label:'Total Revenue', num:1, sort:r => r.rev, cell:r => `<b>${money(r.rev)}</b>`},
         {k:'last', label:'Last Order Date', sort:r => r.last, cell:r => fdate(r.last)},
         {k:'d', label:'Days Since Last Order', num:1, sort:r => r.d, cell:r => { if(r.none) return '<span class="tag n">No Orders Yet</span>'; const h = health(r.d); return `${r.d} <span class="tag ${h[1]}">${h[0]}</span>`; }},
-      ], rows, {sort:{k:'rev', dir:-1}, noun:'account', hint:'click a row for details', rowAct:'acct', rowVal:r => r.cust, i:6})
+      ], rows, {sort:{k:'rev', dir:-1}, noun:'account', hint:OEDIT ? 'click Existing or New to change an account' : 'click a row for details', rowAct:'acct', rowVal:r => r.cust, i:6, tools:originEditBtn()})
       + gridHTML([['mix_tier',6,2],['mix_pay',6,2]], M, 7);
   }
   if(ST.page === 'orders'){
@@ -749,8 +754,25 @@ const ACCOUNT_ORIGIN = {
 const _ORIG_NEW = new Set(ACCOUNT_ORIGIN.new.map(x => String(x).trim().toLowerCase()));
 const _ORIG_EX = new Set(ACCOUNT_ORIGIN.existing.map(x => String(x).trim().toLowerCase()));
 let _CREATED = null;
+/* ---- Edit Origin: changes are saved in the Supabase table `account_origin` (separate from Mark's feed).
+   Editing is unlocked with a separate Edit PIN (only its SHA-256 is stored here). Every change is also
+   written to `account_origin_log` by a database trigger (who, when, from what to what). ---- */
+const ORIGIN_TABLE = 'account_origin';
+const ORIGIN_PIN_HASH = 'fe2592b42a727e977f055947385b709cc82b16b9a87f88c6abf3900d65d0cdc3';
+const ORIGIN_SES = 'ddl_origin_editor', ORIGIN_NAME = 'ddl_origin_editor_name';
+let ORIGIN_DB = new Map(), ORIGIN_READY = false, OEDIT = null, PANEL_ACCT = null;
+try { const s = JSON.parse(sessionStorage.getItem(ORIGIN_SES) || 'null'); if(s && s.h === ORIGIN_PIN_HASH && s.name) OEDIT = s; } catch(_){}
+async function fetchOrigins(){
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/${ORIGIN_TABLE}?select=customer_code,customer,origin,changed_by,changed_at`, {headers:{apikey:SUPA_KEY}});
+    if(!r.ok){ ORIGIN_READY = false; return; }
+    ORIGIN_DB = new Map((await r.json()).map(x => [okey(x.customer_code), x])); ORIGIN_READY = true;
+  } catch(_){ ORIGIN_READY = false; }
+}
+const okey = (code, name) => code ? String(code).trim().toLowerCase() : 'name:' + String(name || '').trim().toLowerCase();
 function originOf(code, name){
   const k = String(code || '').trim().toLowerCase();
+  const db = ORIGIN_DB.get(okey(code, name)); if(db) return db.origin;    // set in the dashboard (Edit Origin) wins
   if(k && _ORIG_NEW.has(k)) return 'New';
   if(k && _ORIG_EX.has(k)) return 'Existing';
   if(!_CREATED){ _CREATED = new Map(); for(const c of CUSTOMERS) if(c.created) _CREATED.set(c.customer_code.toLowerCase(), c.created); }
@@ -758,7 +780,69 @@ function originOf(code, name){
   if(cr && String(cr).slice(0, 10) >= ACCOUNT_ORIGIN.cutoff) return 'New';
   return 'Existing';
 }
-const originTag = o => `<span class="tag ${o === 'New' ? 'g' : 'n'}" title="${o === 'New' ? 'Opened by the rep' : 'Existing account handed over'}">${o}</span>`;
+const originTagOnly = o => `<span class="tag ${o === 'New' ? 'g' : 'n'}" title="${o === 'New' ? 'Opened by the rep' : 'Existing account handed over'}">${o}</span>`;
+
+function originTag(o, code, name){
+  if(!OEDIT || code === undefined) return originTagOnly(o);
+  const d = `data-c="${esc(code || '')}" data-n="${esc(name || '')}"`;
+  return `<span class="oseg" title="Set Account Origin"><button class="${o === 'Existing' ? 'on' : ''}" data-act="setorigin" data-v="Existing" ${d}>Existing</button><button class="${o === 'New' ? 'on g' : ''}" data-act="setorigin" data-v="New" ${d}>New</button></span>`;
+}
+const originCell = (code, name) => originTag(originOf(code, name), code, name);
+const originEditBtn = () => OEDIT
+  ? `<button class="btn amber sm" data-act="oedit" title="Stop editing Account Origin">✓ Done Editing <span style="opacity:.75;font-weight:600">(${esc(OEDIT.name)})</span></button>`
+  : `<button class="btn ghost sm" data-act="oedit" title="Change accounts between Existing and New (needs the Edit PIN)">✎ Edit Origin</button>`;
+function originChangedText(code, name){
+  const x = ORIGIN_DB.get(okey(code, name)); if(!x || !x.changed_by) return '';
+  return `Origin set to ${esc(x.origin)} by ${esc(x.changed_by)}${x.changed_at ? ' on ' + new Date(x.changed_at).toLocaleString('en-AU', {day:'numeric', month:'short', year:'numeric', hour:'numeric', minute:'2-digit'}) : ''}`;
+}
+function oToast(text, bad){
+  let t = document.getElementById('otoast'); if(!t){ t = document.createElement('div'); t.id = 'otoast'; document.body.appendChild(t); }
+  t.textContent = text; t.className = 'otoast show' + (bad ? ' bad' : ''); clearTimeout(oToast._t); oToast._t = setTimeout(() => t.className = 'otoast', bad ? 6000 : 2600);
+}
+function openOriginLock(){
+  let m = document.getElementById('omodal'); if(m) m.remove();
+  m = document.createElement('div'); m.id = 'omodal'; m.className = 'omodal';
+  let last = ''; try { last = localStorage.getItem(ORIGIN_NAME) || ''; } catch(_){}
+  m.innerHTML = ORIGIN_READY
+    ? `<form class="obox" id="oform"><h3>Edit Account Origin</h3><p>Mark accounts as <b>New</b> (opened by the rep) or <b>Existing</b> (handed over). Changes save straight away and everyone sees them on their next refresh.</p>
+       <label>Your Name<input id="oName" autocomplete="off" value="${esc(last)}" placeholder="e.g. Sam" required></label>
+       <label>Edit PIN<input id="oPin" type="password" autocomplete="off" required></label>
+       <div class="oerr" id="oErr"></div><div class="obtns"><button type="button" class="btn" data-act="ocancel">Cancel</button><button type="submit" class="btn dark">Start Editing</button></div></form>`
+    : `<div class="obox"><h3>Edit Account Origin</h3><p>Editing isn't switched on yet. The <b>account_origin</b> table still needs to be set up in Supabase (a one-off step). Until then, every account follows the default (Existing).</p><div class="obtns"><button type="button" class="btn dark" data-act="ocancel">OK</button></div></div>`;
+  document.body.appendChild(m);
+  const f = document.getElementById('oform'); if(!f) return;
+  (last ? document.getElementById('oPin') : document.getElementById('oName')).focus();
+  f.addEventListener('submit', async e => { e.preventDefault();
+    const name = document.getElementById('oName').value.trim().replace(/\s+/g, ' '), pin = document.getElementById('oPin').value;
+    if(!name){ document.getElementById('oErr').textContent = 'Please enter your name.'; return; }
+    if(await sha256Hex(pin) !== ORIGIN_PIN_HASH){ document.getElementById('oErr').textContent = 'That PIN is not right.'; document.getElementById('oPin').select(); return; }
+    OEDIT = {h:ORIGIN_PIN_HASH, name}; try { sessionStorage.setItem(ORIGIN_SES, JSON.stringify(OEDIT)); localStorage.setItem(ORIGIN_NAME, name); } catch(_){}
+    m.remove(); oRefresh(); oToast(`Editing as ${name}. Click Existing or New on any account.`);
+  });
+}
+function oRefresh(){ render(); const p = document.getElementById('panel'); if(PANEL_ACCT && p && p.classList.contains('open')) openAccount(PANEL_ACCT); }
+async function saveOrigin(code, name, origin){
+  if(!OEDIT || !['New','Existing'].includes(origin)) return;
+  const k = okey(code, name), before = ORIGIN_DB.get(k);
+  if(originOf(code, name) === origin && before) return;
+  const row = {customer_code: code || ('name:' + name), customer: name, origin, changed_by: OEDIT.name};
+  ORIGIN_DB.set(k, {...row, changed_at: new Date().toISOString()}); oRefresh();
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/${ORIGIN_TABLE}?on_conflict=customer_code`, {method:'POST', headers:{apikey:SUPA_KEY, 'Content-Type':'application/json', Prefer:'resolution=merge-duplicates,return=minimal'}, body:JSON.stringify([row])});
+    if(!r.ok) throw new Error((await r.text().catch(() => '')).slice(0, 160) || ('error ' + r.status));
+    oToast(`${name}: saved as ${origin}`);
+  } catch(err){
+    console.error(err); if(before) ORIGIN_DB.set(k, before); else ORIGIN_DB.delete(k); oRefresh();
+    oToast(`Could not save ${name} (${err.message}). Nothing was changed.`, true);
+  }
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-act]'); if(!a) return; const k = a.dataset.act;
+  if(k === 'oedit'){ if(OEDIT){ OEDIT = null; try { sessionStorage.removeItem(ORIGIN_SES); } catch(_){} oRefresh(); oToast('Origin editing turned off.'); } else openOriginLock(); }
+  else if(k === 'ocancel'){ document.getElementById('omodal')?.remove(); }
+  else if(k === 'setorigin'){ e.stopPropagation(); saveOrigin(a.dataset.c, a.dataset.n, a.dataset.v); }
+}, true);
+document.addEventListener('keydown', e => { if(e.key === 'Escape') document.getElementById('omodal')?.remove(); });
 
 
 /* ---------- filter bar (same filters as the current dashboard) ---------- */
@@ -804,13 +888,15 @@ function clearFilter(k){
 
 /* ---------- account panel ---------- */
 function openAccount(name){
+  PANEL_ACCT = name;
   const ls = LINES.filter(l => l.customer === name); if(!ls.length) return;
   const done = groupOrders(ls.filter(isDone)).sort((a,b) => a.date < b.date ? 1 : -1), open = groupOrders(ls.filter(isOpenL));
   const rev = done.reduce((s,o) => s + o.val, 0), last = done[0]?.date, d = last ? daysSince(last) : null, h = d === null ? ['No Orders Yet','n'] : health(d), rep = repOf(ls[0]);
   const sku = new Map(); ls.filter(l => isDone(l) && isProduct(l.product_code)).forEach(l => sku.set(l.product_code, (sku.get(l.product_code)||0) + (l.quantity||0)));
   const tier = cv(ls.find(l => cv(l.sell_price_tier))?.sell_price_tier), pay = cv(ls.find(l => cv(l.payment_mode))?.payment_mode);
   document.getElementById('panel').innerHTML = `<div style="display:flex;gap:10px;align-items:flex-start"><div style="flex:1;min-width:0"><h3>${esc(name)}</h3><div style="font-size:12px;color:var(--muted);margin-top:3px">${avatar(rep, 18)} ${esc(rep)}${ls[0].customer_code ? ' · ' + esc(ls[0].customer_code) : ''}</div></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
-   <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">${originTag(originOf(ls[0].customer_code, name))}<span class="tag ${h[1]}">${d === null ? h[0] : h[0] + ' · ' + d + ' days since last order'}</span>${tier ? `<span class="tag k">${esc(tier)}</span>` : ''}${pay ? `<span class="tag k">${esc(pay)}</span>` : ''}</div>
+   <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">${originTag(originOf(ls[0].customer_code, name), ls[0].customer_code || '', name)}<span class="tag ${h[1]}">${d === null ? h[0] : h[0] + ' · ' + d + ' days since last order'}</span>${tier ? `<span class="tag k">${esc(tier)}</span>` : ''}${pay ? `<span class="tag k">${esc(pay)}</span>` : ''}</div>
+   <div class="ochg">${originChangedText(ls[0].customer_code, name)}${originEditBtn()}</div>
    <div class="minik"><div><small>Total Purchase</small><b>${money(rev)}</b></div><div><small>Orders</small><b>${done.length}</b></div><div><small>Avg Order</small><b>${done.length ? money(rev/done.length) : '—'}</b></div></div>
    <h4 style="margin:6px 0 4px;font-size:13px">Orders</h4><table class="t"><thead><tr><th>Date</th><th>Order No.</th><th>Status</th><th class="rt">Total</th></tr></thead><tbody>${[...open, ...done].map(o => `<tr><td>${fdate(o.date)}</td><td>${esc(o.no)}</td><td><span class="tag ${o.st === 'Completed' ? 'g' : 'a'}">${esc(o.st)}</span></td><td class="rt">${money(o.val)}</td></tr>`).join('')}</tbody></table>
    ${sku.size ? `<h4 style="margin:16px 0 6px;font-size:13px">Top SKUs</h4>${[...sku].sort((a,b) => b[1]-a[1]).slice(0,6).map(([k,u]) => `<div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid var(--grid)"><span>${esc(k)}</span><b>${u} sold</b></div>`).join('')}` : ''}
