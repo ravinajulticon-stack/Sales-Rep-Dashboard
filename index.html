@@ -315,7 +315,7 @@ async function load(){
   try {
     const {rows, importedAt, batchId} = await fetchLatestBatch();
     const [carried, custs] = await Promise.all([safeCarry(rows, batchId, '*'), fetchCustomers()]);
-    CUSTOMERS = custs; LINES = rows.concat(carried); IMPORTED_AT = importedAt;
+    CUSTOMERS = custs; _CREATED = null; LINES = rows.concat(carried); IMPORTED_AT = importedAt;
     for(const l of LINES) l.customer = niceName(l.customer);
     await addFirstSeen(LINES);
     ST.loadErr = '';
@@ -362,7 +362,7 @@ const ICON = {
 const ico = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg>`;
 
 /* ======================= state ======================= */
-const ST = {rep:'', range:'all', from:'', to:'', wh:'', pay:'', type:'', tier:'', ost:'', act:'', prod:false, more:false, q:'', edit:false, drawer:false, trend:'stacked', acctF:'All', loadErr:''};
+const ST = {origin:'', rep:'', range:'all', from:'', to:'', wh:'', pay:'', type:'', tier:'', ost:'', act:'', prod:false, more:false, q:'', edit:false, drawer:false, trend:'stacked', acctF:'All', loadErr:''};
 try { const r = localStorage.getItem(REP_KEY); if(r !== null) ST.rep = r === '__none__' ? 'No Rep Assigned' : r; } catch(e){}
 const WDEF = [['k_sales',3,2],['k_orders',3,2],['k_accts',3,2],['k_open',3,2],['trend',8,4],['leader',4,4],['accounts',8,5],['feed',4,5],['skus',4,4],['heat',8,4],['calendar',6,4,1],['opp',6,4,1],['pipeline',12,5,1]];
 const SIZES = [3,4,6,8,12];
@@ -401,7 +401,7 @@ function model(opts = {}){
   const repOk = l => opts.allReps || !ST.rep || repOf(l) === ST.rep;
   const qOk = l => !q || cv(l.customer).toLowerCase().includes(q) || cv(l.order_no).toLowerCase().includes(q) || cv(l.product_code).toLowerCase().includes(q);
   const U = 'Unspecified';
-  const fOk = l => (!ST.acct || l.customer === ST.acct) && (!ST.wh || (cv(l.warehouse) || U) === ST.wh) && (!ST.pay || (cv(l.payment_mode) || U) === ST.pay) && (!ST.type || (cv(l.customer_type) || U) === ST.type) && (!ST.tier || (cv(l.sell_price_tier) || U) === ST.tier);
+  const fOk = l => (!ST.origin || originOf(l.customer_code, l.customer) === ST.origin) && (!ST.acct || l.customer === ST.acct) && (!ST.wh || (cv(l.warehouse) || U) === ST.wh) && (!ST.pay || (cv(l.payment_mode) || U) === ST.pay) && (!ST.type || (cv(l.customer_type) || U) === ST.type) && (!ST.tier || (cv(l.sell_price_tier) || U) === ST.tier);
   const base = LINES.filter(l => repOk(l) && qOk(l) && fOk(l));
   const doneSt = !ST.ost || ST.ost === 'Completed', openSt = l => !ST.ost || ST.ost === 'open' || cv(l.status) === ST.ost;
   const [a, b] = bounds(ST.range);
@@ -421,7 +421,7 @@ function model(opts = {}){
     const d = dateOf(l); if(d && (!x.last || d > x.last)) x.last = d; if(inR(l)){ x.rev += l.sub_total || 0; x.orders.add(l.order_no); } }
   let accts = [...acc.values()].map(x => ({...x, orders:x.orders.size, d:x.last ? daysSince(x.last) : null}));
   if(CUSTOMERS.length && !q && !lineOnly()){ const have = new Set(accts.map(x => cv(x.code).toLowerCase()));
-    for(const c of CUSTOMERS){ const rn = c.rep_name || (/^[25] /.test(c.customer_type) ? NO_REP : ''); if(!REPS.includes(rn) || (ST.rep && !opts.allReps && rn !== ST.rep)) continue; if(have.has(c.customer_code.toLowerCase())) continue;
+    for(const c of CUSTOMERS){ if(ST.origin && originOf(c.customer_code, c.customer) !== ST.origin) continue; const rn = c.rep_name || (/^[25] /.test(c.customer_type) ? NO_REP : ''); if(!REPS.includes(rn) || (ST.rep && !opts.allReps && rn !== ST.rep)) continue; if(have.has(c.customer_code.toLowerCase())) continue;
       accts.push({cust:c.customer, code:c.customer_code, rep:rn, rev:0, orders:0, last:null, d:null, none:true}); } }
   if(ST.act === 'ordered') accts = accts.filter(x => !x.none); else if(ST.act === 'none') accts = accts.filter(x => x.none || !x.orders);
   accts.sort((x,y) => y.rev - x.rev || (x.d ?? 9999) - (y.d ?? 9999));
@@ -471,8 +471,8 @@ const W = {
    return `<div class="kpi"><div class="v" data-count="${M.openOrders.length}">${M.openOrders.length}</div><div class="s"><b>${money(v)}</b>${M.openOrders.length ? ` · oldest ${old} days` : ''}</div><div style="display:flex;gap:4px;flex-wrap:wrap">${M.openOrders.slice(0,4).map(o => `<span class="tag a" data-tip="${esc(o.no)} · ${esc(o.cust)}">${esc(o.st)}</span>`).join('') || '<span class="tag g">All clear</span>'}</div></div>`; }},
  trend:{t:'Sales Trend', sub:() => 'by month', tools:() => `<span class="seg"><button class="${ST.trend === 'stacked' ? 'on' : ''}" data-act="trend" data-v="stacked">Stacked</button><button class="${ST.trend === 'lines' ? 'on' : ''}" data-act="trend" data-v="lines">Lines</button></span>`,
    r(M){ return `${legend(M)}<div class="fit" data-chart="trend" style="height:calc(100% - 22px)">${trendChart(M)}</div>`; }},
- leader:{t:'Rep Leaderboard', sub:() => 'click to filter', r(){ const A = model({allReps:true}); const rows = REPS.filter(r => r !== NO_REP).map(r => ({r, v:A.done.filter(l => repOf(l) === r).reduce((s,l) => s + (l.sub_total||0), 0), o:A.openOrders.filter(o => o.rep === r).length})).sort((a,b) => b.v - a.v); const mx = Math.max(rows[0]?.v || 0, 1);
-   return rows.map((x,i) => `<div class="row click" data-act="rep" data-v="${esc(x.r)}" style="${ST.rep && ST.rep !== x.r ? 'opacity:.4' : ''}"><b style="color:var(--muted);width:14px">${i+1}</b>${avatar(x.r)}<div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:6px"><span class="nm" style="font-weight:600">${esc(x.r)}</span><b>${money(x.v)}</b></div><div class="bar"><i style="width:${x.v/mx*100}%;background:${RC[x.r]}"></i></div><div style="font-size:10.5px;color:var(--muted);margin-top:2px">${A.total ? Math.round(x.v/A.total*100) : 0}% of team sales${x.o ? ` · <span style="color:#a66300;font-weight:700">${x.o} open</span>` : ''}</div></div></div>`).join(''); }},
+ leader:{t:'Rep Leaderboard', sub:() => 'click to filter', r(){ const A = model({allReps:true}); const rows = REPS.filter(r => r !== NO_REP).map(r => ({r, v:A.done.filter(l => repOf(l) === r).reduce((s,l) => s + (l.sub_total||0), 0), nv:A.done.filter(l => repOf(l) === r && originOf(l.customer_code, l.customer) === 'New').reduce((s,l) => s + (l.sub_total||0), 0), o:A.openOrders.filter(o => o.rep === r).length})).sort((a,b) => b.v - a.v); const mx = Math.max(rows[0]?.v || 0, 1);
+   return rows.map((x,i) => `<div class="row click" data-act="rep" data-v="${esc(x.r)}" style="${ST.rep && ST.rep !== x.r ? 'opacity:.4' : ''}"><b style="color:var(--muted);width:14px">${i+1}</b>${avatar(x.r)}<div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:6px"><span class="nm" style="font-weight:600">${esc(x.r)}</span><b>${money(x.v)}</b></div><div class="bar"><i style="width:${x.v/mx*100}%;background:${RC[x.r]}"></i></div><div style="font-size:10.5px;color:var(--muted);margin-top:2px">${A.total ? Math.round(x.v/A.total*100) : 0}% of team sales · ${money(x.nv)} from new accounts${x.o ? ` · <span style="color:#a66300;font-weight:700">${x.o} open</span>` : ''}</div></div></div>`).join(''); }},
  accounts:{t:'Account Health', sub:() => 'days since last order', r(M){ const g = {All:M.accts.filter(a => !a.none), Active:M.accts.filter(a => a.d !== null && a.d <= 30), Cooling:M.accts.filter(a => a.d > 30 && a.d <= 90), 'At Risk':M.accts.filter(a => a.d > 90)}; if(M.accts.some(a => a.none)) g['No Orders Yet'] = M.accts.filter(a => a.none);
    const list = g[ST.acctF] || g.All;
    return `<div class="minis">${Object.keys(g).map(k => `<button class="${ST.acctF === k ? 'on' : ''}" data-act="acctF" data-v="${k}">${k} ${g[k].length}</button>`).join('')}</div>${list.map(a => { const h = a.none ? ['No Orders Yet','n'] : health(a.d); return `<div class="row click" data-act="acct" data-v="${esc(a.cust)}">${avatar(a.rep, 24)}<span class="nm">${esc(a.cust)}</span><span class="tag ${h[1]}">${a.none ? h[0] : a.d + 'd · ' + h[0]}</span><b style="width:88px;text-align:right">${money(a.rev)}</b></div>`; }).join('') || '<div class="empty">No accounts match.</div>'}`; }},
@@ -579,6 +579,10 @@ function barsHTML(rows, color, click){ const mx = Math.max(...rows.map(r => r[1]
   return rows.map(([k,v,sub]) => `<div class="${click ? 'click' : ''}" style="margin-bottom:10px" ${click ? `data-act="${click}" data-v="${esc(k)}"` : ''}><div style="display:flex;justify-content:space-between;gap:8px;font-size:12.5px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${typeof color === 'function' ? `<span class="dot" style="background:${color(k)}"></span>` : ''}${esc(k)}</span><b>${money(v)}${sub ? ` <span style="color:var(--muted);font-weight:500">${sub}</span>` : ''}</b></div><div class="bar"><i style="width:${Math.max(v,0)/mx*100}%;background:${typeof color === 'function' ? color(k) : color}"></i></div></div>`).join('') || '<div class="empty">No sales in this period.</div>'; }
 
 Object.assign(W, {
+  origin_split:{t:'New vs Existing Accounts', sub:() => 'sales by account origin', r(){ const A = model({allReps:true});
+    const rows = REPS.filter(r => r !== NO_REP).map(r => { const ls = A.done.filter(l => repOf(l) === r), n = ls.filter(l => originOf(l.customer_code, l.customer) === 'New').reduce((s,l) => s + (l.sub_total||0), 0), t = ls.reduce((s,l) => s + (l.sub_total||0), 0); return {r, n, e:t - n, t}; }).sort((a,b) => b.t - a.t);
+    const mx = Math.max(...rows.map(x => x.t), 1);
+    return `<div style="display:flex;gap:14px;font-size:11px;color:var(--ink2);margin-bottom:6px"><span><span class="dot" style="background:#17b26a"></span>New (Opened By Rep)</span><span><span class="dot" style="background:#b8c6e8"></span>Existing (Handed Over)</span></div>` + rows.map(x => `<div class="click" data-act="rep" data-v="${esc(x.r)}" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12.5px;gap:8px"><span>${repCell(x.r)}</span><span><b>${money(x.n)}</b> <span class="mut">new of ${money(x.t)}</span></span></div><div class="bar" style="display:flex;height:9px"><i style="width:${x.n/mx*100}%;background:#17b26a;border-radius:4px 0 0 4px"></i><i style="width:${x.e/mx*100}%;background:#b8c6e8;border-radius:0 4px 4px 0"></i></div></div>`).join('') + (ACCOUNT_ORIGIN.new.length || CUSTOMERS.some(c => c.created) ? '' : '<div class="mut" style="font-size:11.5px;margin-top:4px">Every account counts as Existing until Sam\'s list is loaded.</div>'); }},
   k_lines:{t:'Line Items', sub:() => 'order lines', r(M){ return `<div class="kpi"><div class="v" data-count="${M.done.length}">${M.done.length}</div><div class="s">across ${M.orders.length} orders</div><div></div></div>`; }},
   k_aov:{t:'Avg Order Value', sub:() => 'per completed order', r(M){ const v = M.orders.length ? M.total / M.orders.length : 0; return `<div class="kpi"><div class="v" data-count="${v}" data-fmt="money">${money(v)}</div><div class="s">${M.orders.length} orders · ${new Set(M.orders.map(o => o.cust)).size} customers</div><div></div></div>`; }},
   k_skus:{t:'Products Sold', sub:() => 'different SKUs', r(M){ const p = new Map(); M.done.forEach(l => { if(cv(l.product_code) && (!ST.prod || isProduct(l.product_code))) p.set(l.product_code, (p.get(l.product_code) || 0) + (l.quantity || 0)); }); const u = [...p.values()].reduce((a,b) => a + b, 0);
@@ -597,8 +601,8 @@ Object.assign(W, {
     return `<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;height:100%">${cell(MN[n.getMonth()] + ' To Date', money(M.thisM), 'so far this month')}${cell(MN[(n.getMonth()+11)%12], money(M.lastM), 'whole month')}${cell('Change', ch === null ? '—' : `<span class="${ch >= 0 ? 'up' : 'down'}">${ch >= 0 ? '▲' : '▼'} ${Math.abs(ch).toFixed(0)}%</span>`, 'this month so far vs last month')}${cell('Selected Period', money(M.total), RLABEL())}</div>`; }},
   rep_cmp:{t:'Rep Comparison', sub:() => 'completed sales', r(){ const A = model({allReps:true}), n = new Date(), tm = mkey(n), lm = mkey(new Date(n.getFullYear(), n.getMonth()-1, 1));
     const sumR = (r, k) => A.doneAll.filter(l => repOf(l) === r && mkey(dateOf(l)) === k).reduce((s,l) => s + (l.sub_total || 0), 0);
-    const rows = REPS.filter(r => r !== NO_REP).map(r => ({r, t:sumR(r, tm), l:sumR(r, lm), p:A.done.filter(l => repOf(l) === r).reduce((s,l) => s + (l.sub_total || 0), 0), m:A.ms.map((_,i) => A.monthly[i][r] || 0)})).sort((a,b) => b.p - a.p);
-    return `<table class="t"><thead><tr><th>Sales Rep</th><th class="rt">This Month</th><th class="rt">Last Month</th><th class="rt">Change</th><th class="rt">${esc(RLABEL())}</th><th style="width:130px">Trend</th></tr></thead><tbody>${rows.map(x => { const d = x.t - x.l; return `<tr class="click" data-act="rep" data-v="${esc(x.r)}"><td>${repCell(x.r)}</td><td class="rt">${money(x.t)}</td><td class="rt">${money(x.l)}</td><td class="rt"><span class="${d >= 0 ? 'up' : 'down'}">${d >= 0 ? '▲' : '▼'} ${money(Math.abs(d))}</span></td><td class="rt"><b>${money(x.p)}</b></td><td>${spark(x.m, RC[x.r], 120, 28)}</td></tr>`; }).join('')}</tbody></table>`; }},
+    const rows = REPS.filter(r => r !== NO_REP).map(r => ({r, t:sumR(r, tm), l:sumR(r, lm), p:A.done.filter(l => repOf(l) === r).reduce((s,l) => s + (l.sub_total || 0), 0), n:A.done.filter(l => repOf(l) === r && originOf(l.customer_code, l.customer) === 'New').reduce((s,l) => s + (l.sub_total || 0), 0), m:A.ms.map((_,i) => A.monthly[i][r] || 0)})).sort((a,b) => b.p - a.p);
+    return `<table class="t"><thead><tr><th>Sales Rep</th><th class="rt">This Month</th><th class="rt">Last Month</th><th class="rt">Change</th><th class="rt">${esc(RLABEL())}</th><th class="rt">From New Accounts</th><th style="width:130px">Trend</th></tr></thead><tbody>${rows.map(x => { const d = x.t - x.l; return `<tr class="click" data-act="rep" data-v="${esc(x.r)}"><td>${repCell(x.r)}</td><td class="rt">${money(x.t)}</td><td class="rt">${money(x.l)}</td><td class="rt"><span class="${d >= 0 ? 'up' : 'down'}">${d >= 0 ? '▲' : '▼'} ${money(Math.abs(d))}</span></td><td class="rt"><b>${money(x.p)}</b></td><td class="rt">${money(x.n)} <span class="mut">${x.p ? Math.round(x.n/x.p*100) : 0}%</span></td><td>${spark(x.m, RC[x.r], 120, 28)}</td></tr>`; }).join('')}</tbody></table>`; }},
 });
 
 function pageHTML(M){
@@ -613,6 +617,7 @@ function pageHTML(M){
       + tableCard('accounts', 'All Accounts', [
         {k:'rep', label:'Sales Rep', sort:r => r.rep, cell:r => repCell(r.rep)},
         {k:'cust', label:'Customer', sort:r => r.cust.toLowerCase(), cls:'wr', cell:r => `<b style="font-weight:600">${esc(r.cust)}</b>`},
+        {k:'origin', label:'Origin', sort:r => originOf(r.code, r.cust), cell:r => originTag(originOf(r.code, r.cust))},
         {k:'tier', label:'Sell Price Tier', sort:r => r.tier || null, cell:r => r.tier ? esc(r.tier) : '<span class="mut">—</span>'},
         {k:'pay', label:'Payment Mode', sort:r => r.pay || null, cell:r => r.pay ? esc(r.pay) : '<span class="mut">—</span>'},
         {k:'orders', label:'Orders', num:1, sort:r => r.orders, cell:r => `${r.orders}${r.open ? ` <span class="tag a">+${r.open} open</span>` : ''}`},
@@ -661,7 +666,7 @@ function pageHTML(M){
       + gridHTML([['sku_rep',12,4]], M, 7);
   }
   if(ST.page === 'reports'){
-    return gridHTML([['month_cmp',12,2],['trend',8,4],['leader',4,4],['rep_cmp',12,3],['heat',12,3],['top_accts',6,4],['skus',6,4],['mix_tier',6,2],['mix_pay',6,2]], M);
+    return gridHTML([['month_cmp',12,2],['trend',8,4],['leader',4,4],['origin_split',12,3],['rep_cmp',12,3],['heat',12,3],['top_accts',6,4],['skus',6,4],['mix_tier',6,2],['mix_pay',6,2]], M);
   }
   return '';
 }
@@ -731,6 +736,30 @@ async function handleImport(file){
   } catch(err){ console.error(err); setImportMsg(err.message || 'Import failed.', 'err'); }
 }
 
+/* ---------------- Account Origin: Existing (handed over) vs New (opened by the rep) ----------------
+   Every account is Existing unless it is on Sam's list as New, or it first appears in
+   Unleashed (customer created date, from Mark's customer feed) on or after the cut-off.
+   To update: add customer codes to `new` (opened by a rep) or `existing` (handed over). */
+const ACCOUNT_ORIGIN = {
+  cutoff: '2026-07-01',       // customers created on or after this date count as New
+  updated: '',                // date Sam's list was last loaded
+  new: [],                    // customer codes the reps opened
+  existing: [],               // customer codes handed over (only needed to override the cut-off rule)
+};
+const _ORIG_NEW = new Set(ACCOUNT_ORIGIN.new.map(x => String(x).trim().toLowerCase()));
+const _ORIG_EX = new Set(ACCOUNT_ORIGIN.existing.map(x => String(x).trim().toLowerCase()));
+let _CREATED = null;
+function originOf(code, name){
+  const k = String(code || '').trim().toLowerCase();
+  if(k && _ORIG_NEW.has(k)) return 'New';
+  if(k && _ORIG_EX.has(k)) return 'Existing';
+  if(!_CREATED){ _CREATED = new Map(); for(const c of CUSTOMERS) if(c.created) _CREATED.set(c.customer_code.toLowerCase(), c.created); }
+  const cr = k && _CREATED.get(k);
+  if(cr && String(cr).slice(0, 10) >= ACCOUNT_ORIGIN.cutoff) return 'New';
+  return 'Existing';
+}
+const originTag = o => `<span class="tag ${o === 'New' ? 'g' : 'n'}" title="${o === 'New' ? 'Opened by the rep' : 'Existing account handed over'}">${o}</span>`;
+
 
 /* ---------- filter bar (same filters as the current dashboard) ---------- */
 const OST = [['','All Statuses'],['Completed','Completed'],['open','Open (Placed, Parked, Backordered)'],['Placed','Placed'],['Parked','Parked'],['Backordered','Backordered']];
@@ -744,6 +773,7 @@ function filterBar(){
   const bar = `<div class="fbar ${ST.more ? 'more' : ''}">
     ${sel('fRep','Sales Rep', opts('All Sales Reps', REPS, ST.rep))}
     ${sel('fRange','Date Range', RANGES.map(([k,l]) => `<option value="${k}" ${ST.range === k ? 'selected' : ''}>${l}</option>`).join(''))}
+    ${sel('fOrigin','Account Origin', [['','All Accounts'],['Existing','Existing (Handed Over)'],['New','New (Opened By Rep)']].map(([v,t]) => `<option value="${v}" ${ST.origin === v ? 'selected' : ''}>${t}</option>`).join(''))}
     <span class="fcust ${ST.range === 'custom' ? 'on' : ''}"><label class="fctl"><small>From</small><input type="date" id="fFrom" value="${ST.from}"></label><label class="fctl"><small>To</small><input type="date" id="fTo" value="${ST.to}"></label></span>
     <label class="fctl fs"><small>Search</small><input id="q" type="search" placeholder="Customer, order no. or SKU" value="${esc(ST.q)}" autocomplete="off"></label>
     <button type="button" class="morebtn ${ST.more ? 'on' : ''}" data-act="more">${ST.more ? 'Fewer Filters' : 'More Filters'}${nSec ? ' (' + nSec + ' on)' : ''}</button>
@@ -759,6 +789,7 @@ function filterBar(){
   const c = [], add = (k, l, v) => c.push(`<span class="fchip"><small>${l}</small>${esc(v)}<button type="button" data-act="clear" data-v="${k}" aria-label="Remove ${l} filter">×</button></span>`);
   if(ST.rep) add('rep', 'Rep', ST.rep);
   if(ST.acct) add('acct', 'Account', ST.acct);
+  if(ST.origin) add('origin', 'Origin', ST.origin === 'New' ? 'New (Opened By Rep)' : 'Existing (Handed Over)');
   if(ST.range !== 'all') add('range', 'Date', ST.range === 'custom' ? (ST.from ? fdate(ST.from + 'T00:00:00') : '…') + ' → ' + (ST.to ? fdate(ST.to + 'T00:00:00') : '…') : RLABEL());
   if(ST.wh) add('wh', 'Warehouse', ST.wh); if(ST.pay) add('pay', 'Payment', ST.pay); if(ST.type) add('type', 'Type', ST.type);
   if(ST.ost) add('ost', 'Status', OST.find(o => o[0] === ST.ost)[1]); if(ST.act) add('act', 'Accounts', ACT.find(o => o[0] === ST.act)[1]);
@@ -766,7 +797,7 @@ function filterBar(){
   return bar + `<div class="chips">${c.length ? `<span class="lbl">Active Filters:</span>${c.join('')}${c.length > 1 ? '<button type="button" class="clearall" data-act="clear" data-v="all">Clear All</button>' : ''}` : '<span class="lbl">No Filters, Showing Everything</span>'}</div>`;
 }
 function clearFilter(k){
-  if(k === 'all') Object.assign(ST, {acct:'', pg:{}, rep:'', range:'all', from:'', to:'', wh:'', pay:'', type:'', tier:'', ost:'', act:'', prod:false, q:''});
+  if(k === 'all') Object.assign(ST, {origin:'', acct:'', pg:{}, rep:'', range:'all', from:'', to:'', wh:'', pay:'', type:'', tier:'', ost:'', act:'', prod:false, q:''});
   else if(k === 'range'){ ST.range = 'all'; ST.from = ''; ST.to = ''; } else if(k === 'prod') ST.prod = false; else ST[k] = '';
   ST.pg = {}; if(k === 'all' || k === 'rep') saveRep(); render(true);
 }
@@ -779,7 +810,7 @@ function openAccount(name){
   const sku = new Map(); ls.filter(l => isDone(l) && isProduct(l.product_code)).forEach(l => sku.set(l.product_code, (sku.get(l.product_code)||0) + (l.quantity||0)));
   const tier = cv(ls.find(l => cv(l.sell_price_tier))?.sell_price_tier), pay = cv(ls.find(l => cv(l.payment_mode))?.payment_mode);
   document.getElementById('panel').innerHTML = `<div style="display:flex;gap:10px;align-items:flex-start"><div style="flex:1;min-width:0"><h3>${esc(name)}</h3><div style="font-size:12px;color:var(--muted);margin-top:3px">${avatar(rep, 18)} ${esc(rep)}${ls[0].customer_code ? ' · ' + esc(ls[0].customer_code) : ''}</div></div><button class="x" data-act="close" aria-label="Close">✕</button></div>
-   <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><span class="tag ${h[1]}">${d === null ? h[0] : h[0] + ' · ' + d + ' days since last order'}</span>${tier ? `<span class="tag k">${esc(tier)}</span>` : ''}${pay ? `<span class="tag k">${esc(pay)}</span>` : ''}</div>
+   <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">${originTag(originOf(ls[0].customer_code, name))}<span class="tag ${h[1]}">${d === null ? h[0] : h[0] + ' · ' + d + ' days since last order'}</span>${tier ? `<span class="tag k">${esc(tier)}</span>` : ''}${pay ? `<span class="tag k">${esc(pay)}</span>` : ''}</div>
    <div class="minik"><div><small>Total Purchase</small><b>${money(rev)}</b></div><div><small>Orders</small><b>${done.length}</b></div><div><small>Avg Order</small><b>${done.length ? money(rev/done.length) : '—'}</b></div></div>
    <h4 style="margin:6px 0 4px;font-size:13px">Orders</h4><table class="t"><thead><tr><th>Date</th><th>Order No.</th><th>Status</th><th class="rt">Total</th></tr></thead><tbody>${[...open, ...done].map(o => `<tr><td>${fdate(o.date)}</td><td>${esc(o.no)}</td><td><span class="tag ${o.st === 'Completed' ? 'g' : 'a'}">${esc(o.st)}</span></td><td class="rt">${money(o.val)}</td></tr>`).join('')}</tbody></table>
    ${sku.size ? `<h4 style="margin:16px 0 6px;font-size:13px">Top SKUs</h4>${[...sku].sort((a,b) => b[1]-a[1]).slice(0,6).map(([k,u]) => `<div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid var(--grid)"><span>${esc(k)}</span><b>${u} sold</b></div>`).join('')}` : ''}
@@ -802,7 +833,7 @@ function wire(){
   const on = (id, f) => { const el = document.getElementById(id); if(el) el.onchange = e => { f(e.target); ST.pg = {}; render(true); }; };
   on('fRep', t => { ST.rep = t.value; saveRep(); }); on('fRange', t => { ST.range = t.value; }); on('fFrom', t => { ST.from = t.value; }); on('fTo', t => { ST.to = t.value; });
   on('fWh', t => { ST.wh = t.value; }); on('fPay', t => { ST.pay = t.value; }); on('fType', t => { ST.type = t.value; }); on('fOst', t => { ST.ost = t.value; });
-  on('fAct', t => { ST.act = t.value; }); on('fTier', t => { ST.tier = t.value; }); on('fProd', t => { ST.prod = t.checked; });
+  on('fAct', t => { ST.act = t.value; }); on('fTier', t => { ST.tier = t.value; }); on('fOrigin', t => { ST.origin = t.value; }); on('fProd', t => { ST.prod = t.checked; });
   if(!ST.edit) return;
   document.querySelectorAll('#grid .w').forEach(w => {
     const hd = w.querySelector('.handle'); if(hd){ hd.addEventListener('pointerdown', () => { w.draggable = true; }); hd.addEventListener('pointerup', () => { w.draggable = false; }); }
